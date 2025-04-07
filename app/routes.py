@@ -26,9 +26,13 @@ def scan_wifi():
 
 def parse_wifi_output(output):
     networks = []
-    lines = output.split('\n')
-    for line in lines:
-        if 'SSID' in line:
-            ssid = line.split(':')[1].strip()
-            networks.append(ssid)
+    for line in output.splitlines():
+        line = line.strip()
+        if line.startswith("SSID"):  # Solo procesa las líneas que contienen información del SSID
+            # Verifica si la línea contiene ':' y divídela de manera segura
+            if ':' in line:
+                parts = line.split(':', 1)
+                ssid = parts[1].strip() if len(parts) > 1 else ''
+                networks.append(ssid)
     return networks
+
