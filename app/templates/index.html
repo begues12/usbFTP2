@@ -1,6 +1,14 @@
-{% extends 'base.html' %}
-
-{% block content %}
-<h1>Bienvenido a USB FTP</h1>
-<p>Esta es la página de inicio de la aplicación.</p>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Inicio</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Bienvenido a la aplicación de escaneo Wi-Fi</h1>
+        <a href="{{ url_for('wifi') }}" class="btn btn-primary mt-3">Ver Redes Wi-Fi</a>
+    </div>
+</body>
+</html>
