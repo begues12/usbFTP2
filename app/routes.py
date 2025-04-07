@@ -1,5 +1,5 @@
 import subprocess
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, flash
 
 app = Flask(__name__)
 app.secret_key = 'tu_clave_secreta_aqui'  # Cambia esto por una clave secreta segura
@@ -11,12 +11,11 @@ def index():
 @app.route('/wifi', methods=['GET', 'POST'])
 def wifi():
     networks = []
-    error_message = None
     if request.method == 'POST':
         networks = scan_wifi()
         if not networks:
-            error_message = 'No se encontraron redes Wi-Fi.'
-    return render_template('wifi.html', networks=networks, error_message=error_message)
+            flash('No se encontraron redes Wi-Fi.', 'danger')
+    return render_template('wifi.html', networks=networks)
 
 def scan_wifi():
     networks = []
@@ -25,16 +24,24 @@ def scan_wifi():
         output = result.stdout.decode('utf-8')
         networks = parse_wifi_output(output)
     except Exception as e:
-        networks = []
+        print(f'Error al escanear Wi-Fi: {e}')
     return networks
 
 def parse_wifi_output(output):
     networks = []
+    current_network = None
     for line in output.splitlines():
         line = line.strip()
-        if line.startswith("SSID"):
-            if ':' in line:
-                parts = line.split(':', 1)
-                ssid = parts[1].strip() if len(parts) > 1 else ''
-                networks.append(ssid)
+        if line.startswith('Cell'):
+            if current_network:
+                networks.append(current_network)
+            current_network = {}
+        elif 'ESSID' in line:
+            ssid = line.split('ESSID:')[1].strip().replace('"', '')
+            current_network['SSID'] = ssid
+        elif 'Signal level' in line:
+            signal = line.split('Signal level=')[1].split(' ')[0].strip()
+            current_network['Signal'] = signal
+    if current_network:
+        networks.append(current_network)
     return networks
