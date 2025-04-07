@@ -1,9 +1,8 @@
 from flask import Flask
+from flask_bootstrap import Bootstrap5
 
-def create_app():
-    app = Flask(__name__)
-    
-    from .routes import main
-    app.register_blueprint(main)
+app = Flask(__name__)
+bootstrap = Bootstrap5(app)
 
-    return app
+from app import routes
+
