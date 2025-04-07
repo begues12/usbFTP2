@@ -1,11 +1,9 @@
-import subprocess
-from flask import Flask, render_template, request, flash
+from flask import Flask, render_template
 
 app = Flask(__name__)
-app.secret_key = 'tu_clave_secreta_aqui'  # Cambia esto por una clave secreta segura
 
 @app.route('/')
-def index():
+def home():
     return render_template('index.html')
 
 @app.route('/wifi', methods=['GET', 'POST'])
