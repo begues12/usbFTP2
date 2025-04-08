@@ -18,6 +18,11 @@
         <h1 class="text-center">Dashboard</h1>
         <p class="text-center text-muted">Gestiona las particiones del disco duro.</p>
 
+        <!-- Botón para crear particiones -->
+        <div class="text-center mb-4">
+            <button class="btn btn-primary" data-toggle="modal" data-target="#createPartitionModal">Crear Partición</button>
+        </div>
+
         <!-- Gráfico de almacenamiento -->
         <div class="row mt-4">
             <div class="col-md-4">
@@ -103,9 +108,13 @@
                 const systemStorage = data.system_storage;
                 unallocatedStorage = data.unallocated_storage;
 
+                // Separar particiones del sistema y creadas por el usuario
+                const userPartitions = partitions.filter(partition => partition.name.startsWith('/dev/'));
+                const systemPartitions = partitions.filter(partition => !partition.name.startsWith('/dev/'));
+
                 // Preparar datos para el gráfico
-                const labels = ['Sistema', ...partitions.map(partition => partition.name), 'No Asignado'];
-                const chartData = [systemStorage, ...partitions.map(partition => partition.size), unallocatedStorage];
+                const labels = ['Sistema', ...userPartitions.map(partition => partition.name), 'No Asignado'];
+                const chartData = [systemStorage, ...userPartitions.map(partition => partition.size), unallocatedStorage];
 
                 // Configuración del gráfico
                 const ctx = document.getElementById('storageChart').getContext('2d');
@@ -118,7 +127,7 @@
                             data: chartData,
                             backgroundColor: [
                                 'rgba(54, 162, 235, 0.6)', // Sistema
-                                'rgba(75, 192, 192, 0.6)', // Particiones
+                                'rgba(75, 192, 192, 0.6)', // Particiones creadas por el usuario
                                 'rgba(255, 206, 86, 0.6)', // No Asignado
                             ],
                             borderColor: [
@@ -149,7 +158,7 @@
                 // Rellenar la tabla de particiones
                 const tableBody = document.getElementById('partition-table-body');
                 tableBody.innerHTML = ''; // Limpiar la tabla antes de rellenarla
-                partitions.forEach(partition => {
+                userPartitions.forEach(partition => {
                     const row = `
                         <tr>
                             <td>${partition.name}</td>
@@ -180,24 +189,26 @@
             const name = document.getElementById('partitionName').value;
             const size = document.getElementById('partitionSize').value;
 
-            // Mostrar modal de carga
-            $('#loadingModal').modal('show');
+            if (confirm(`¿Estás seguro de que deseas crear la partición "${name}" con un tamaño de ${size} GB?`)) {
+                // Mostrar modal de carga
+                $('#loadingModal').modal('show');
 
-            fetch('/storage/create_partition', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, size })
-            })
-            .then(response => response.json())
-            .then(data => {
-                $('#loadingModal').modal('hide');
-                alert(data.message || 'Partición creada con éxito');
-                location.reload(); // Recargar la página para actualizar los datos
-            })
-            .catch(error => {
-                $('#loadingModal').modal('hide');
-                alert('Error al crear la partición: ' + error.message);
-            });
+                fetch('/storage/create_partition', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, size })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    $('#loadingModal').modal('hide');
+                    alert(data.message || 'Partición creada con éxito');
+                    location.reload(); // Recargar la página para actualizar los datos
+                })
+                .catch(error => {
+                    $('#loadingModal').modal('hide');
+                    alert('Error al crear la partición: ' + error.message);
+                });
+            }
         });
 
         // Eliminar partición
