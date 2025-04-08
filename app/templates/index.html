@@ -193,7 +193,7 @@
                 // Mostrar modal de carga
                 $('#loadingModal').modal('show');
 
-                fetch('/storage/create_partition', {
+                fetch('/storage/create_usb_volume', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, size })

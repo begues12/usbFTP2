@@ -3,6 +3,61 @@ from flask import Blueprint, jsonify, request
 
 storage_bp = Blueprint('storage', __name__)
 
+@storage_bp.route('/create_usb_volume', methods=['POST'])
+def create_usb_volume():
+    try:
+        # Obtener datos del formulario
+        name = request.json.get('name')  # Nombre del volumen
+        size = float(request.json.get('size'))  # Tamaño en GB
+
+        if not name or not size:
+            return jsonify({'error': 'El nombre y el tamaño son obligatorios'}), 400
+
+        # Verificar el dispositivo principal (e.g., /dev/sda)
+        device = "/dev/sda"  # Cambia esto si tu dispositivo principal es diferente
+        result = subprocess.run(['lsblk', '-b', '-o', 'NAME,SIZE,MOUNTPOINT'], stdout=subprocess.PIPE, text=True)
+        output = result.stdout
+
+        # Calcular el inicio y fin de la nueva partición
+        last_partition = None
+        for line in output.splitlines()[1:]:
+            parts = line.split()
+            if len(parts) >= 3 and parts[0].startswith('sda'):
+                last_partition = parts[0]
+
+        if not last_partition:
+            return jsonify({'error': 'No se encontró una partición válida en el dispositivo'}), 500
+
+        # Obtener el tamaño total del dispositivo
+        total_size = int([line.split()[1] for line in output.splitlines() if line.startswith('sda')][0])
+
+        # Calcular el inicio y fin de la nueva partición
+        used_size = sum(int(line.split()[1]) for line in output.splitlines() if line.startswith('sda') and len(line.split()) > 2)
+        start_sector = used_size
+        end_sector = start_sector + int(size * (1024 ** 3))  # Convertir GB a bytes
+
+        if end_sector > total_size:
+            return jsonify({'error': 'El tamaño solicitado excede el espacio disponible en el dispositivo'}), 400
+
+        # Crear la nueva partición usando parted
+        subprocess.run(['sudo', 'parted', device, 'mkpart', name, 'ext4', f'{start_sector}B', f'{end_sector}B'], check=True)
+
+        # Formatear la partición como ext4
+        partition_name = f"{device}{len(last_partition) + 1}"  # Asumimos que la nueva partición será la siguiente
+        subprocess.run(['sudo', 'mkfs.ext4', partition_name], check=True)
+
+        # Configurar el volumen USB para que sea usable
+        mount_point = f"/mnt/{name}"
+        subprocess.run(['sudo', 'mkdir', '-p', mount_point], check=True)
+        subprocess.run(['sudo', 'mount', partition_name, mount_point], check=True)
+
+        return jsonify({'message': f'Volumen USB "{name}" creado y montado en {mount_point} con éxito'}), 200
+
+    except subprocess.CalledProcessError as e:
+        return jsonify({'error': f'Error al ejecutar un comando del sistema: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Error inesperado: {str(e)}'}), 500
+    
 @storage_bp.route('/get_storage_info', methods=['GET'])
 def get_storage_info():
     try:
