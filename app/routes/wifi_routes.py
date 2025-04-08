@@ -58,7 +58,7 @@ def save_wifi():
     return redirect(url_for('wifi.list_wifi'))
 
 
-@app.route('/wifi/list_wifi_ajax', methods=['GET'])
+@wifi_bp.route('/list_wifi_ajax', methods=['GET'])
 def list_wifi_ajax():
     networks = scan_wifi()  # Función que escanea redes Wi-Fi
     return jsonify({'networks': networks})
