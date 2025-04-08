@@ -61,7 +61,7 @@ def create_usb_volume():
 @storage_bp.route('/get_storage_info', methods=['GET'])
 def get_storage_info():
     try:
-        # Obtener información del dispositivo usando lsblk
+        # Ejecutar el comando 'lsblk' para obtener información del dispositivo
         result = subprocess.run(['lsblk', '-b', '-o', 'NAME,SIZE,MOUNTPOINT'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         output = result.stdout
 
@@ -98,6 +98,9 @@ def get_storage_info():
         used_storage = system_storage + sum(partition['size'] for partition in partitions)
         unallocated_storage = total_storage - used_storage
 
+        # Asegurarse de que no haya valores negativos
+        unallocated_storage = max(unallocated_storage, 0)
+
         # Devolver los datos como JSON
         return jsonify({
             'partitions': partitions,
@@ -108,7 +111,8 @@ def get_storage_info():
 
     except Exception as e:
         return jsonify({'error': f'Error al obtener información del almacenamiento: {str(e)}'}), 500
-
+    
+# Ruta para crear una partición
 @storage_bp.route('/create_partition', methods=['POST'])
 def create_partition():
     try:
@@ -126,6 +130,7 @@ def create_partition():
         return jsonify({'error': f'Error al crear la partición: {str(e)}'}), 500
 
 
+# Ruta para borrar una partición
 @storage_bp.route('/delete_partition', methods=['POST'])
 def delete_partition():
     try:
@@ -142,6 +147,7 @@ def delete_partition():
         return jsonify({'error': f'Error al eliminar la partición: {str(e)}'}), 500
 
 
+# Ruta para editar una partición (cambiar tamaño o nombre)
 @storage_bp.route('/edit_partition', methods=['POST'])
 def edit_partition():
     try:
@@ -151,15 +157,36 @@ def edit_partition():
         if not name or not new_name or not size:
             return jsonify({'error': 'El nombre, el nuevo nombre y el tamaño son obligatorios'}), 400
 
-        # Editar la partición (esto puede variar según el sistema)
-        command = f"sudo parted /dev/sda resizepart {name} {size}GB"
-        subprocess.run(command, shell=True, check=True)
+        # Cambiar el tamaño de la partición
+        command_resize = f"sudo parted /dev/sda resizepart {name} {size}GB"
+        subprocess.run(command_resize, shell=True, check=True)
+
+        # Cambiar el nombre de la partición (si es necesario)
+        if name != new_name:
+            command_rename = f"sudo e2label /dev/{name} {new_name}"
+            subprocess.run(command_rename, shell=True, check=True)
 
         return jsonify({'message': 'Partición editada con éxito'}), 200
     except Exception as e:
         return jsonify({'error': f'Error al editar la partición: {str(e)}'}), 500
 
 
+# Ruta para reducir el tamaño de una partición
+@storage_bp.route('/shrink_partition', methods=['POST'])
+def shrink_partition():
+    try:
+        name = request.json.get('name')  # Nombre de la partición
+        new_size = request.json.get('new_size')  # Nuevo tamaño en GB
+        if not name or not new_size:
+            return jsonify({'error': 'El nombre y el nuevo tamaño son obligatorios'}), 400
+
+        # Reducir el tamaño de la partición
+        command = f"sudo parted /dev/sda resizepart {name} {new_size}GB"
+        subprocess.run(command, shell=True, check=True)
+
+        return jsonify({'message': 'Partición reducida con éxito'}), 200
+    except Exception as e:
+        return jsonify({'error': f'Error al reducir la partición: {str(e)}'}), 500
 def convert_to_gb(size_str):
     """
     Convierte un tamaño en formato humano (e.g., '50G', '1024M') a GB.
