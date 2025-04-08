@@ -31,11 +31,6 @@
         {% endif %}
         {% endwith %}
 
-        <!-- Formulario para escanear redes -->
-        <form method="POST" action="{{ url_for('wifi.list_wifi') }}" class="mb-4">
-            <button type="submit" class="btn btn-primary btn-block">Escanear Redes Wi-Fi</button>
-        </form>
-
         <!-- Lista de redes Wi-Fi -->
         <div id="wifi-container">
             <h2 class="mt-4">Redes Disponibles</h2>
