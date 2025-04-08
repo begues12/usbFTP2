@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 import subprocess
 
 wifi_bp = Blueprint('wifi', __name__)
@@ -56,6 +56,12 @@ def save_wifi():
     else:
         flash(f'Error al guardar la red {ssid}.', 'danger')
     return redirect(url_for('wifi.list_wifi'))
+
+
+@app.route('/wifi/list_wifi_ajax', methods=['GET'])
+def list_wifi_ajax():
+    networks = scan_wifi_networks()  # Función que escanea redes Wi-Fi
+    return jsonify({'networks': networks})
 
 # Función para escanear redes Wi-Fi
 def scan_wifi():
