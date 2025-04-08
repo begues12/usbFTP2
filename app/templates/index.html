@@ -250,8 +250,7 @@
         document.getElementById('editPartitionForm').addEventListener('submit', async function (e) {
             e.preventDefault();
         
-            const name = document.getElementById('editPartitionName').value; // Nombre del dispositivo
-            const partitionNumber = document.getElementById('editPartitionNumber').value; // Número de la partición
+            const name = document.getElementById('editPartitionName').value; // Nombre completo de la partición (e.g., /dev/sda1)
             const size = document.getElementById('editPartitionSize').value; // Nuevo tamaño
         
             if (confirm(`¿Estás seguro de que deseas cambiar el tamaño de la partición "${name}" a ${size} GB?`)) {
@@ -263,7 +262,6 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             name: name,
-                            partition_number: partitionNumber,
                             size: size
                         }) // Enviar datos al backend
                     });
@@ -284,7 +282,7 @@
                 }
             }
         });
-    
+        
         // Configurar el modal de edición
         document.addEventListener('click', function (e) {
             if (e.target.classList.contains('edit-partition')) {
