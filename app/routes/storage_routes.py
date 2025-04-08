@@ -126,9 +126,10 @@ def create_partition():
         subprocess.run(command, shell=True, check=True)
 
         return jsonify({'message': 'Partición creada con éxito'}), 200
+    except subprocess.CalledProcessError as e:
+        return jsonify({'error': f'Error al ejecutar el comando del sistema: {str(e)}'}), 500
     except Exception as e:
-        return jsonify({'error': f'Error al crear la partición: {str(e)}'}), 500
-
+        return jsonify({'error': f'Error inesperado: {str(e)}'}), 500
 
 # Ruta para borrar una partición
 @storage_bp.route('/delete_partition', methods=['POST'])
