@@ -17,14 +17,33 @@
     <div class="container mt-5">
         <h1 class="text-center">Dashboard</h1>
         <p class="text-center text-muted">Gestiona las particiones del disco duro.</p>
-    
-        <!-- Botones de acción -->
-        <div class="text-center mb-4">
-            <button class="btn btn-primary" data-toggle="modal" data-target="#createPartitionModal">Crear Partición</button>
-            <button class="btn btn-danger" id="deletePartitionButton">Eliminar Partición</button>
-            <button class="btn btn-warning" id="editPartitionButton">Editar Partición</button>
+
+        <!-- Gráfico de almacenamiento -->
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <h3 class="text-center">Almacenamiento Total</h3>
+                <canvas id="storageChart" width="300" height="300"></canvas>
+            </div>
+
+            <!-- Información de las particiones -->
+            <div class="col-md-8">
+                <h3 class="text-center">Detalles de Particiones</h3>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Tamaño</th>
+                            <th>Tipo</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="partition-table-body">
+                        <!-- Las filas se generarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
         </div>
-    
+
         <!-- Modal de carga -->
         <div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
@@ -38,8 +57,7 @@
                 </div>
             </div>
         </div>
-    
-        <!-- Modales para crear, editar y borrar particiones -->
+
         <!-- Crear partición -->
         <div class="modal fade" id="createPartitionModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog">
@@ -58,7 +76,8 @@
                             </div>
                             <div class="form-group">
                                 <label for="partitionSize">Tamaño (GB)</label>
-                                <input type="number" class="form-control" id="partitionSize" required>
+                                <input type="range" class="form-control-range" id="partitionSize" min="0.1" step="0.1">
+                                <small id="partitionSizeLabel" class="form-text text-muted">Tamaño seleccionado: 0.1 GB</small>
                             </div>
                             <button type="submit" class="btn btn-primary">Crear</button>
                         </form>
@@ -66,60 +85,27 @@
                 </div>
             </div>
         </div>
-
-        <!-- Gráfico de almacenamiento -->
-        <div class="row mt-4">
-            <div class="col-md-6">
-                <h3 class="text-center">Almacenamiento Total</h3>
-                <canvas id="storageChart" width="400" height="400"></canvas>
-            </div>
-
-            <!-- Información de las particiones -->
-            <div class="col-md-12">
-                <h3 class="text-center">Detalles de Particiones</h3>
-                {% if partitions %}
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Nombre</th>
-                            <th>Tamaño</th>
-                            <th>Tipo</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for partition in partitions %}
-                        <tr>
-                            <td>{{ partition.name }}</td>
-                            <td>{{ partition.size }} GB</td>
-                            <td>{{ partition.type }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <p class="text-center text-muted">No se encontraron particiones disponibles.</p>
-                {% endif %}
-            </div>
-        </div>
-
     </div>
 
     <!-- Incluir el footer -->
     {% include 'footer.html' %}
 
-    <!-- Script para generar el gráfico -->
+    <!-- Script para manejar particiones -->
     <script>
+        let unallocatedStorage = 0;
+
         // Obtener datos del almacenamiento desde el backend
         fetch('/storage/get_storage_info')
             .then(response => response.json())
             .then(data => {
                 const partitions = data.partitions;
                 const totalStorage = data.total_storage;
-                const unallocatedStorage = data.unallocated_storage;
+                const systemStorage = data.system_storage;
+                unallocatedStorage = data.unallocated_storage;
 
                 // Preparar datos para el gráfico
-                const labels = partitions.map(partition => partition.name).concat(['No Asignado']);
-                const chartData = partitions.map(partition => partition.size).concat([unallocatedStorage]);
+                const labels = ['Sistema', ...partitions.map(partition => partition.name), 'No Asignado'];
+                const chartData = [systemStorage, ...partitions.map(partition => partition.size), unallocatedStorage];
 
                 // Configuración del gráfico
                 const ctx = document.getElementById('storageChart').getContext('2d');
@@ -131,20 +117,14 @@
                             label: 'Almacenamiento (GB)',
                             data: chartData,
                             backgroundColor: [
-                                'rgba(75, 192, 192, 0.6)',
-                                'rgba(54, 162, 235, 0.6)',
-                                'rgba(255, 206, 86, 0.6)',
-                                'rgba(255, 99, 132, 0.6)',
-                                'rgba(153, 102, 255, 0.6)',
-                                'rgba(201, 203, 207, 0.6)' // Para "No Asignado"
+                                'rgba(54, 162, 235, 0.6)', // Sistema
+                                'rgba(75, 192, 192, 0.6)', // Particiones
+                                'rgba(255, 206, 86, 0.6)', // No Asignado
                             ],
                             borderColor: [
-                                'rgba(75, 192, 192, 1)',
                                 'rgba(54, 162, 235, 1)',
+                                'rgba(75, 192, 192, 1)',
                                 'rgba(255, 206, 86, 1)',
-                                'rgba(255, 99, 132, 1)',
-                                'rgba(153, 102, 255, 1)',
-                                'rgba(201, 203, 207, 1)' // Para "No Asignado"
                             ],
                             borderWidth: 1
                         }]
@@ -165,9 +145,36 @@
                         }
                     }
                 });
+
+                // Rellenar la tabla de particiones
+                const tableBody = document.getElementById('partition-table-body');
+                tableBody.innerHTML = ''; // Limpiar la tabla antes de rellenarla
+                partitions.forEach(partition => {
+                    const row = `
+                        <tr>
+                            <td>${partition.name}</td>
+                            <td>${partition.size} GB</td>
+                            <td>${partition.type}</td>
+                            <td>
+                                <button class="btn btn-warning btn-sm edit-partition" data-name="${partition.name}" data-size="${partition.size}">Editar</button>
+                                <button class="btn btn-danger btn-sm delete-partition" data-name="${partition.name}">Eliminar</button>
+                            </td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+
+                // Configurar el slider para crear particiones
+                const partitionSizeInput = document.getElementById('partitionSize');
+                const partitionSizeLabel = document.getElementById('partitionSizeLabel');
+                partitionSizeInput.max = unallocatedStorage;
+                partitionSizeInput.addEventListener('input', function () {
+                    partitionSizeLabel.textContent = `Tamaño seleccionado: ${this.value} GB`;
+                });
             })
             .catch(error => console.error('Error al obtener los datos del almacenamiento:', error));
 
+        // Crear partición
         document.getElementById('createPartitionForm').addEventListener('submit', function (e) {
             e.preventDefault();
             const name = document.getElementById('partitionName').value;
@@ -191,6 +198,31 @@
                 $('#loadingModal').modal('hide');
                 alert('Error al crear la partición: ' + error.message);
             });
+        });
+
+        // Eliminar partición
+        document.addEventListener('click', function (e) {
+            if (e.target.classList.contains('delete-partition')) {
+                const name = e.target.getAttribute('data-name');
+                if (confirm(`¿Estás seguro de que deseas eliminar la partición "${name}"?`)) {
+                    $('#loadingModal').modal('show');
+                    fetch('/storage/delete_partition', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        $('#loadingModal').modal('hide');
+                        alert(data.message || 'Partición eliminada con éxito');
+                        location.reload();
+                    })
+                    .catch(error => {
+                        $('#loadingModal').modal('hide');
+                        alert('Error al eliminar la partición: ' + error.message);
+                    });
+                }
+            }
         });
     </script>
 </body>
