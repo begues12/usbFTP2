@@ -6,48 +6,41 @@ storage_bp = Blueprint('storage', __name__)
 @storage_bp.route('/get_storage_info', methods=['GET'])
 def get_storage_info():
     try:
-        # Ejecutar el comando 'df' para obtener información de las particiones
-        result = subprocess.run(['df', '-h'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        # Obtener información del dispositivo usando lsblk
+        result = subprocess.run(['lsblk', '-b', '-o', 'NAME,SIZE,MOUNTPOINT'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         output = result.stdout
 
-        # Procesar la salida del comando 'df'
+        # Procesar la salida de lsblk
         partitions = []
         total_storage = 0
-        used_storage = 0
         system_storage = 0
+        unallocated_storage = 0
 
         for line in output.splitlines()[1:]:  # Saltar la primera línea (encabezados)
             parts = line.split()
-            if len(parts) < 6:
+            if len(parts) < 2:
                 continue
 
-            # Extraer información relevante
-            filesystem = parts[0]
-            size = parts[1]
-            used = parts[2]
-            available = parts[3]
-            mountpoint = parts[5]
+            name = parts[0]
+            size = int(parts[1])  # Tamaño en bytes
+            mountpoint = parts[2] if len(parts) > 2 else None
 
-            # Convertir tamaños a GB (si es necesario)
-            size_gb = convert_to_gb(size)
-            used_gb = convert_to_gb(used)
-
-            # Sumar al almacenamiento total y usado
-            total_storage += size_gb
-            used_storage += used_gb
-
-            # Clasificar el espacio del sistema
-            if mountpoint in ['/', '/boot', '/home']:
-                system_storage += size_gb
+            # Si es el dispositivo principal (e.g., sda), obtener el tamaño total
+            if not mountpoint and len(name) == 3:  # e.g., "sda"
+                total_storage = size / (1024 ** 3)  # Convertir a GB
+            elif mountpoint in ['/', '/boot', '/home']:
+                # Clasificar como almacenamiento del sistema
+                system_storage += size / (1024 ** 3)
             else:
                 # Agregar partición a la lista
                 partitions.append({
-                    'name': mountpoint,
-                    'size': size_gb,
-                    'type': filesystem
+                    'name': mountpoint or f'/dev/{name}',
+                    'size': round(size / (1024 ** 3), 2),
+                    'type': 'ext4'  # Puedes ajustar esto según el sistema
                 })
 
         # Calcular el espacio no asignado
+        used_storage = system_storage + sum(partition['size'] for partition in partitions)
         unallocated_storage = total_storage - used_storage
 
         # Devolver los datos como JSON
@@ -60,7 +53,6 @@ def get_storage_info():
 
     except Exception as e:
         return jsonify({'error': f'Error al obtener información del almacenamiento: {str(e)}'}), 500
-
 
 @storage_bp.route('/create_partition', methods=['POST'])
 def create_partition():
