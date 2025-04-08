@@ -152,33 +152,29 @@ def delete_partition():
 @storage_bp.route('/edit_partition', methods=['POST'])
 def edit_partition():
     try:
-        name = request.json.get('name')  # Nombre completo de la partición (e.g., /dev/sda1)
+        name = request.json.get('name')  # Nombre completo del dispositivo (e.g., /dev/mmcblk0)
+        partition_number = request.json.get('partition_number')  # Número de la partición
         size = float(request.json.get('size'))  # Nuevo tamaño en GB
 
-        if not name or not size:
-            return jsonify({'error': 'El nombre y el tamaño son obligatorios'}), 400
+        if not name or not partition_number or not size:
+            return jsonify({'error': 'El nombre, el número de partición y el tamaño son obligatorios'}), 400
 
         # Verificar si la partición existe
-        if not os.path.exists(name):
-            return jsonify({'error': f'La partición {name} no existe'}), 400
-
-        # Obtener el tamaño ocupado de la partición
-        result = subprocess.run(['df', '-BG', '--output=used', name], stdout=subprocess.PIPE, text=True)
-        used_size = int(result.stdout.splitlines()[1].replace('G', '').strip())  # Tamaño ocupado en GB
-
-        if size < used_size:
-            return jsonify({'error': f'El tamaño no puede ser menor que el almacenamiento ocupado ({used_size} GB)'}), 400
+        device = f"{name}{partition_number}"
+        if not os.path.exists(device):
+            return jsonify({'error': f'La partición {device} no existe'}), 400
 
         # Cambiar el tamaño de la partición
-        command_resize = f"sudo parted {name} resizepart {size}GB"
-        subprocess.run(command_resize, shell=True, check=True)
+        command_resize = f"sudo parted {name} resizepart {partition_number} {size}GB"
+        result = subprocess.run(command_resize, shell=True, text=True, stderr=subprocess.PIPE)
+
+        if result.returncode != 0:
+            return jsonify({'error': f'Error al ejecutar el comando: {result.stderr.strip()}'}), 500
 
         return jsonify({'message': 'Partición editada con éxito'}), 200
-    except subprocess.CalledProcessError as e:
-        return jsonify({'error': f'Error al ejecutar el comando del sistema: {str(e)}'}), 500
     except Exception as e:
         return jsonify({'error': f'Error inesperado: {str(e)}'}), 500
-    
+        
 # Ruta para reducir el tamaño de una partición
 @storage_bp.route('/shrink_partition', methods=['POST'])
 def shrink_partition():
