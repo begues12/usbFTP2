@@ -62,35 +62,58 @@
             </div>
         </div>
 
-        <!-- Modal de éxito -->
-        <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
+        <!-- Crear partición -->
+        <div class="modal fade" id="createPartitionModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
                 <div class="modal-content">
-                    <div class="modal-header bg-success text-white">
-                        <h5 class="modal-title">¡Éxito!</h5>
+                    <div class="modal-header">
+                        <h5 class="modal-title">Crear Partición</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
-                    <div class="modal-body text-center">
-                        <p id="successMessage">La operación se completó con éxito.</p>
+                    <div class="modal-body">
+                        <form id="createPartitionForm">
+                            <div class="form-group">
+                                <label for="partitionName">Nombre</label>
+                                <input type="text" class="form-control" id="partitionName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="partitionSize">Tamaño (GB)</label>
+                                <input type="range" class="form-control-range" id="partitionSize" min="0.1" step="0.1">
+                                <small id="partitionSizeLabel" class="form-text text-muted">Tamaño seleccionado: 0.1 GB</small>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Crear</button>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Modal de error -->
-        <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
+        <!-- Editar partición -->
+        <div class="modal fade" id="editPartitionModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
                 <div class="modal-content">
-                    <div class="modal-header bg-danger text-white">
-                        <h5 class="modal-title">¡Error!</h5>
+                    <div class="modal-header">
+                        <h5 class="modal-title">Editar Partición</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
-                    <div class="modal-body text-center">
-                        <p id="errorMessage">Ocurrió un error durante la operación.</p>
+                    <div class="modal-body">
+                        <form id="editPartitionForm">
+                            <div class="form-group">
+                                <label for="editPartitionName">Nombre</label>
+                                <input type="text" class="form-control" id="editPartitionName" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="editPartitionSize">Tamaño (GB)</label>
+                                <input type="range" class="form-control-range" id="editPartitionSize" min="0.1" step="0.1">
+                                <input type="number" class="form-control mt-2" id="editPartitionSizeNumber" min="0.1" step="0.1">
+                                <small id="editPartitionSizeLabel" class="form-text text-muted">Tamaño seleccionado: 0.1 GB</small>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -102,6 +125,92 @@
 
     <!-- Script para manejar particiones -->
     <script>
+        let unallocatedStorage = 0;
+
+        // Obtener datos del almacenamiento desde el backend
+        fetch('/storage/get_storage_info')
+            .then(response => response.json())
+            .then(data => {
+                const partitions = data.partitions;
+                const totalStorage = data.total_storage;
+                const systemStorage = data.system_storage;
+                unallocatedStorage = data.unallocated_storage;
+
+                // Separar particiones del sistema y creadas por el usuario
+                const userPartitions = partitions.filter(partition => partition.name.startsWith('/dev/'));
+                const systemPartitions = partitions.filter(partition => !partition.name.startsWith('/dev/'));
+
+                // Preparar datos para el gráfico
+                const labels = ['Sistema', ...userPartitions.map(partition => partition.name), 'No Asignado'];
+                const chartData = [systemStorage, ...userPartitions.map(partition => partition.size), unallocatedStorage];
+
+                // Configuración del gráfico
+                const ctx = document.getElementById('storageChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Almacenamiento (GB)',
+                            data: chartData,
+                            backgroundColor: [
+                                'rgba(54, 162, 235, 0.6)', // Sistema
+                                'rgba(75, 192, 192, 0.6)', // Particiones creadas por el usuario
+                                'rgba(255, 206, 86, 0.6)', // No Asignado
+                            ],
+                            borderColor: [
+                                'rgba(54, 162, 235, 1)',
+                                'rgba(75, 192, 192, 1)',
+                                'rgba(255, 206, 86, 1)',
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(tooltipItem) {
+                                        return `${tooltipItem.label}: ${tooltipItem.raw} GB`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Rellenar la tabla de particiones
+                const tableBody = document.getElementById('partition-table-body');
+                tableBody.innerHTML = ''; // Limpiar la tabla antes de rellenarla
+                userPartitions.forEach(partition => {
+                    const row = `
+                        <tr>
+                            <td>${partition.name}</td>
+                            <td>${partition.size} GB</td>
+                            <td>${partition.type}</td>
+                            <td>
+                                <button class="btn btn-warning btn-sm edit-partition" data-name="${partition.name}" data-size="${partition.size}">Editar</button>
+                                <button class="btn btn-danger btn-sm delete-partition" data-name="${partition.name}">Eliminar</button>
+                            </td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+
+                // Configurar el slider para crear particiones
+                const partitionSizeInput = document.getElementById('partitionSize');
+                const partitionSizeLabel = document.getElementById('partitionSizeLabel');
+                partitionSizeInput.max = unallocatedStorage;
+                partitionSizeInput.addEventListener('input', function () {
+                    partitionSizeLabel.textContent = `Tamaño seleccionado: ${this.value} GB`;
+                });
+            })
+            .catch(error => console.error('Error al obtener los datos del almacenamiento:', error));
+
         // Crear partición
         document.getElementById('createPartitionForm').addEventListener('submit', function (e) {
             e.preventDefault();
@@ -109,7 +218,6 @@
             const size = document.getElementById('partitionSize').value;
 
             if (confirm(`¿Estás seguro de que deseas crear la partición "${name}" con un tamaño de ${size} GB?`)) {
-                // Mostrar modal de carga
                 $('#loadingModal').modal('show');
 
                 fetch('/storage/create_partition', {
@@ -120,22 +228,68 @@
                 .then(response => response.json())
                 .then(data => {
                     $('#loadingModal').modal('hide');
-                    if (data.message) {
-                        // Mostrar modal de éxito
-                        document.getElementById('successMessage').textContent = data.message;
-                        $('#successModal').modal('show');
-                        setTimeout(() => location.reload(), 2000); // Recargar después de 2 segundos
-                    } else if (data.error) {
-                        // Mostrar modal de error
-                        document.getElementById('errorMessage').textContent = data.error;
-                        $('#errorModal').modal('show');
-                    }
+                    alert(data.message || 'Partición creada con éxito');
+                    location.reload();
                 })
                 .catch(error => {
                     $('#loadingModal').modal('hide');
-                    // Mostrar modal de error
-                    document.getElementById('errorMessage').textContent = 'Error al crear la partición: ' + error.message;
-                    $('#errorModal').modal('show');
+                    alert('Error al crear la partición: ' + error.message);
+                });
+            }
+        });
+
+        // Editar partición
+        document.addEventListener('click', function (e) {
+            if (e.target.classList.contains('edit-partition')) {
+                const name = e.target.getAttribute('data-name');
+                const size = e.target.getAttribute('data-size');
+
+                // Configurar el modal de edición
+                document.getElementById('editPartitionName').value = name;
+                const editPartitionSizeInput = document.getElementById('editPartitionSize');
+                const editPartitionSizeNumber = document.getElementById('editPartitionSizeNumber');
+                const editPartitionSizeLabel = document.getElementById('editPartitionSizeLabel');
+
+                editPartitionSizeInput.value = size;
+                editPartitionSizeNumber.value = size;
+                editPartitionSizeInput.max = parseFloat(size) + unallocatedStorage;
+
+                editPartitionSizeInput.addEventListener('input', function () {
+                    editPartitionSizeNumber.value = this.value;
+                    editPartitionSizeLabel.textContent = `Tamaño seleccionado: ${this.value} GB`;
+                });
+
+                editPartitionSizeNumber.addEventListener('input', function () {
+                    editPartitionSizeInput.value = this.value;
+                    editPartitionSizeLabel.textContent = `Tamaño seleccionado: ${this.value} GB`;
+                });
+
+                $('#editPartitionModal').modal('show');
+            }
+        });
+
+        document.getElementById('editPartitionForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const name = document.getElementById('editPartitionName').value;
+            const size = document.getElementById('editPartitionSize').value;
+
+            if (confirm(`¿Estás seguro de que deseas cambiar el tamaño de la partición "${name}" a ${size} GB?`)) {
+                $('#loadingModal').modal('show');
+
+                fetch('/storage/edit_partition', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, size })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    $('#loadingModal').modal('hide');
+                    alert(data.message || 'Partición editada con éxito');
+                    location.reload();
+                })
+                .catch(error => {
+                    $('#loadingModal').modal('hide');
+                    alert('Error al editar la partición: ' + error.message);
                 });
             }
         });
