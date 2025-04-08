@@ -152,25 +152,28 @@ def delete_partition():
 def edit_partition():
     try:
         name = request.json.get('name')  # Nombre de la partición
-        new_name = request.json.get('new_name')  # Nuevo nombre
-        size = request.json.get('size')  # Nuevo tamaño
-        if not name or not new_name or not size:
-            return jsonify({'error': 'El nombre, el nuevo nombre y el tamaño son obligatorios'}), 400
+        size = float(request.json.get('size'))  # Nuevo tamaño en GB
+
+        if not name or not size:
+            return jsonify({'error': 'El nombre y el tamaño son obligatorios'}), 400
+
+        # Obtener el tamaño ocupado de la partición
+        result = subprocess.run(['df', '-BG', '--output=used', name], stdout=subprocess.PIPE, text=True)
+        used_size = int(result.stdout.splitlines()[1].replace('G', '').strip())  # Tamaño ocupado en GB
+
+        if size < used_size:
+            return jsonify({'error': f'El tamaño no puede ser menor que el almacenamiento ocupado ({used_size} GB)'}), 400
 
         # Cambiar el tamaño de la partición
         command_resize = f"sudo parted /dev/sda resizepart {name} {size}GB"
         subprocess.run(command_resize, shell=True, check=True)
 
-        # Cambiar el nombre de la partición (si es necesario)
-        if name != new_name:
-            command_rename = f"sudo e2label /dev/{name} {new_name}"
-            subprocess.run(command_rename, shell=True, check=True)
-
         return jsonify({'message': 'Partición editada con éxito'}), 200
+    except subprocess.CalledProcessError as e:
+        return jsonify({'error': f'Error al ejecutar el comando del sistema: {str(e)}'}), 500
     except Exception as e:
-        return jsonify({'error': f'Error al editar la partición: {str(e)}'}), 500
-
-
+        return jsonify({'error': f'Error inesperado: {str(e)}'}), 500
+    
 # Ruta para reducir el tamaño de una partición
 @storage_bp.route('/shrink_partition', methods=['POST'])
 def shrink_partition():
