@@ -151,11 +151,15 @@ def delete_partition():
 @storage_bp.route('/edit_partition', methods=['POST'])
 def edit_partition():
     try:
-        name = request.json.get('name')  # Nombre de la partición
+        name = request.json.get('name')  # Nombre completo de la partición (e.g., /dev/sda1)
         size = float(request.json.get('size'))  # Nuevo tamaño en GB
 
         if not name or not size:
             return jsonify({'error': 'El nombre y el tamaño son obligatorios'}), 400
+
+        # Verificar si la partición existe
+        if not os.path.exists(name):
+            return jsonify({'error': f'La partición {name} no existe'}), 400
 
         # Obtener el tamaño ocupado de la partición
         result = subprocess.run(['df', '-BG', '--output=used', name], stdout=subprocess.PIPE, text=True)
@@ -165,7 +169,7 @@ def edit_partition():
             return jsonify({'error': f'El tamaño no puede ser menor que el almacenamiento ocupado ({used_size} GB)'}), 400
 
         # Cambiar el tamaño de la partición
-        command_resize = f"sudo parted /dev/sda resizepart {name} {size}GB"
+        command_resize = f"sudo parted {name} resizepart {size}GB"
         subprocess.run(command_resize, shell=True, check=True)
 
         return jsonify({'message': 'Partición editada con éxito'}), 200
