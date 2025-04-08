@@ -154,18 +154,22 @@ def delete_partition():
 @storage_bp.route('/edit_partition', methods=['POST'])
 def edit_partition():
     try:
-        name = request.json.get('name')  # Nombre completo del dispositivo (e.g., /dev/mmcblk0)
+        name = request.json.get('name')  # Nombre completo del dispositivo (e.g., /dev/mmcblk0p1)
         size = float(request.json.get('size'))  # Nuevo tamaño en GB
 
         if not name or not size:
             return jsonify({'error': 'El nombre y el tamaño son obligatorios'}), 400
 
-        # Extraer el número de la partición del nombre
+        # Extraer el nombre base del dispositivo y el número de la partición
         if not name.startswith('/dev/'):
             return jsonify({'error': 'El nombre de la partición no es válido'}), 400
 
-        device = name[:-1]  # Eliminar el número de la partición para obtener el dispositivo (e.g., /dev/mmcblk0)
-        partition_number = name[len(device):]  # Extraer el número de la partición (e.g., 1)
+        # Manejar nombres como /dev/mmcblk0p1
+        device = ''.join([c for c in name if not c.isdigit() and c != 'p'])  # Extraer el nombre base del dispositivo
+        partition_number = ''.join([c for c in name if c.isdigit()])  # Extraer el número de la partición
+
+        if not device or not partition_number:
+            return jsonify({'error': 'No se pudo determinar el dispositivo o el número de partición'}), 400
 
         # Cambiar el tamaño de la partición
         command_resize = f"sudo parted --script {device} resizepart {partition_number} {size}GB"
@@ -177,7 +181,7 @@ def edit_partition():
         return jsonify({'message': 'Partición editada con éxito'}), 200
     except Exception as e:
         return jsonify({'error': f'Error inesperado: {str(e)}'}), 500
-                    
+                        
 # Ruta para reducir el tamaño de una partición
 @storage_bp.route('/shrink_partition', methods=['POST'])
 def shrink_partition():
