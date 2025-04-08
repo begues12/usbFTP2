@@ -38,6 +38,7 @@
 
         <!-- Lista de redes Wi-Fi -->
         {% if networks %}
+        <div id="wifi-container">
             <h2 class="mt-4">Redes Disponibles</h2>
             <table class="table table-striped">
                 <thead>
@@ -47,7 +48,7 @@
                         <th>Acciones</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="wifi-table-body">
                     {% for network in networks %}
                     <tr>
                         <td>{{ network.SSID }}</td>
@@ -66,46 +67,77 @@
                     {% endfor %}
                 </tbody>
             </table>
-            {% else %}
-            <p class="text-center text-muted">No se encontraron redes Wi-Fi. Haz clic en "Escanear Redes Wi-Fi" para buscar.</p>
-            {% endif %}
-
-            <!-- Modal para conectar -->
-            <div class="modal fade" id="connectModal" tabindex="-1" aria-labelledby="connectModalLabel" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <form method="POST" action="{{ url_for('wifi.connect_wifi') }}">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="connectModalLabel">Conectar a la Red</h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
+        </div>
+        
+        <!-- Modal para conectar -->
+        <div class="modal fade" id="connectModal" tabindex="-1" aria-labelledby="connectModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="POST" action="{{ url_for('wifi.connect_wifi') }}">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="connectModalLabel">Conectar a la Red</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" name="ssid" id="modal-ssid">
+                            <div class="form-group">
+                                <label for="password">Contraseña</label>
+                                <input type="password" name="password" id="password" class="form-control" placeholder="Contraseña" required>
                             </div>
-                            <div class="modal-body">
-                                <input type="hidden" name="ssid" id="modal-ssid">
-                                <div class="form-group">
-                                    <label for="password">Contraseña</label>
-                                    <input type="password" name="password" id="password" class="form-control" placeholder="Contraseña" required>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                                <button type="submit" class="btn btn-success">Conectar</button>
-                            </div>
-                        </form>
-                    </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-success">Conectar</button>
+                        </div>
+                    </form>
                 </div>
             </div>
-
-            <!-- JavaScript para manejar el modal -->
-            <script>
-                $('#connectModal').on('show.bs.modal', function (event) {
-                    var button = $(event.relatedTarget); // Botón que activó el modal
-                    var ssid = button.data('ssid'); // Extraer información del atributo data-ssid
-                    var modal = $(this);
-                    modal.find('#modal-ssid').val(ssid); // Rellenar el campo oculto con el SSID
-                });
-            </script>
+        </div>
+        
+        <!-- JavaScript para manejar el modal y actualizar la tabla -->
+        <script>
+            // Manejar el modal para conectar
+            $('#connectModal').on('show.bs.modal', function (event) {
+                var button = $(event.relatedTarget); // Botón que activó el modal
+                var ssid = button.data('ssid'); // Extraer información del atributo data-ssid
+                var modal = $(this);
+                modal.find('#modal-ssid').val(ssid); // Rellenar el campo oculto con el SSID
+            });
+        
+            // Actualizar la tabla de redes Wi-Fi cada 5 segundos
+            function updateWifiTable() {
+                fetch('{{ url_for("wifi.list_wifi_ajax") }}') // Endpoint para obtener redes Wi-Fi
+                    .then(response => response.json())
+                    .then(data => {
+                        const tableBody = document.getElementById('wifi-table-body');
+                        tableBody.innerHTML = ''; // Limpiar la tabla
+                        data.networks.forEach(network => {
+                            const row = `
+                                <tr>
+                                    <td>${network.SSID}</td>
+                                    <td>${network.Signal}</td>
+                                    <td>
+                                        <button 
+                                            class="btn btn-success btn-sm" 
+                                            data-toggle="modal" 
+                                            data-target="#connectModal" 
+                                            data-ssid="${network.SSID}">
+                                            Conectar
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                            tableBody.innerHTML += row;
+                        });
+                    })
+                    .catch(error => console.error('Error al actualizar las redes Wi-Fi:', error));
+            }
+        
+            // Llamar a la función cada 5 segundos
+            setInterval(updateWifiTable, 5000);
+        </script>
     <!-- Footer -->
     <footer class="bg-dark text-white text-center py-3 mt-5">
         <p class="mb-0">© 2025 Wi-Fi Scanner. Todos los derechos reservados.</p>
