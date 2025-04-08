@@ -117,6 +117,9 @@ def get_storage_info():
 @storage_bp.route('/create_partition', methods=['POST'])
 def create_partition():
     try:
+        # Depurar los datos recibidos
+        print("Datos recibidos:", request.json)
+
         size = request.json.get('size')  # Tamaño de la partición en GB
         name = request.json.get('name')  # Nombre de la partición
         if not size or not name:
@@ -129,8 +132,7 @@ def create_partition():
         return jsonify({'message': 'Partición creada con éxito'}), 200
     except Exception as e:
         return jsonify({'error': f'Error al crear la partición: {str(e)}'}), 500
-
-
+    
 # Ruta para borrar una partición
 @storage_bp.route('/delete_partition', methods=['POST'])
 def delete_partition():
@@ -152,17 +154,15 @@ def delete_partition():
 @storage_bp.route('/edit_partition', methods=['POST'])
 def edit_partition():
     try:
-        name = request.json.get('name')  # Nombre completo del dispositivo (e.g., /dev/mmcblk0)
+        # Depurar los datos recibidos
+        print("Datos recibidos:", request.json)
+
+        name = request.json.get('name')  # Nombre completo del dispositivo
         partition_number = request.json.get('partition_number')  # Número de la partición
         size = float(request.json.get('size'))  # Nuevo tamaño en GB
 
         if not name or not partition_number or not size:
             return jsonify({'error': 'El nombre, el número de partición y el tamaño son obligatorios'}), 400
-
-        # Verificar si la partición existe
-        device = f"{name}{partition_number}"
-        if not os.path.exists(device):
-            return jsonify({'error': f'La partición {device} no existe'}), 400
 
         # Cambiar el tamaño de la partición
         command_resize = f"sudo parted {name} resizepart {partition_number} {size}GB"
@@ -174,7 +174,7 @@ def edit_partition():
         return jsonify({'message': 'Partición editada con éxito'}), 200
     except Exception as e:
         return jsonify({'error': f'Error inesperado: {str(e)}'}), 500
-        
+            
 # Ruta para reducir el tamaño de una partición
 @storage_bp.route('/shrink_partition', methods=['POST'])
 def shrink_partition():

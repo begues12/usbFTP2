@@ -84,7 +84,7 @@
                                 <small id="partitionSizeLabel" class="form-text text-muted">Tamaño seleccionado: 0.1 GB</small>
                             </div>
                             <button type="submit" class="btn btn-primary">Crear</button>
-                        </form>
+                        </form>                    
                     </div>
                 </div>
             </div>
@@ -105,6 +105,10 @@
                             <div class="form-group">
                                 <label for="editPartitionName">Nombre</label>
                                 <input type="text" class="form-control" id="editPartitionName" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="editPartitionNumber">Número de Partición</label>
+                                <input type="number" class="form-control" id="editPartitionNumber" readonly>
                             </div>
                             <div class="form-group">
                                 <label for="editPartitionSize">Tamaño (GB)</label>
@@ -214,22 +218,26 @@
         // Crear partición
         document.getElementById('createPartitionForm').addEventListener('submit', function (e) {
             e.preventDefault();
-            const name = document.getElementById('partitionName').value;
-            const size = document.getElementById('partitionSize').value;
-
+            const name = document.getElementById('partitionName').value; // Nombre de la partición
+            const size = document.getElementById('partitionSize').value; // Tamaño de la partición
+        
             if (confirm(`¿Estás seguro de que deseas crear la partición "${name}" con un tamaño de ${size} GB?`)) {
                 $('#loadingModal').modal('show');
-
+        
                 fetch('/storage/create_partition', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, size })
+                    body: JSON.stringify({ name, size }) // Enviar datos al backend
                 })
                 .then(response => response.json())
                 .then(data => {
                     $('#loadingModal').modal('hide');
-                    alert(data.message || 'Partición creada con éxito');
-                    location.reload();
+                    if (data.message) {
+                        alert(data.message || 'Partición creada con éxito');
+                        location.reload();
+                    } else if (data.error) {
+                        alert('Error: ' + data.error);
+                    }
                 })
                 .catch(error => {
                     $('#loadingModal').modal('hide');
@@ -241,47 +249,38 @@
         // Editar partición
         document.getElementById('editPartitionForm').addEventListener('submit', async function (e) {
             e.preventDefault();
-    
-            const name = document.getElementById('editPartitionName').value;
-            const size = document.getElementById('editPartitionSize').value;
-    
+        
+            const name = document.getElementById('editPartitionName').value; // Nombre del dispositivo
+            const partitionNumber = document.getElementById('editPartitionNumber').value; // Número de la partición
+            const size = document.getElementById('editPartitionSize').value; // Nuevo tamaño
+        
             if (confirm(`¿Estás seguro de que deseas cambiar el tamaño de la partición "${name}" a ${size} GB?`)) {
-                // Mostrar modal de carga
                 $('#loadingModal').modal('show');
-    
+        
                 try {
-                    // Llamada asíncrona al backend
                     const response = await fetch('/storage/edit_partition', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, size })
+                        body: JSON.stringify({
+                            name: name,
+                            partition_number: partitionNumber,
+                            size: size
+                        }) // Enviar datos al backend
                     });
-    
+        
                     const data = await response.json();
-    
-                    // Ocultar modal de carga
                     $('#loadingModal').modal('hide');
-    
+        
                     if (response.ok && data.message) {
-                        // Cerrar el modal de edición
                         $('#editPartitionModal').modal('hide');
-    
-                        // Mostrar modal de éxito
-                        document.getElementById('successMessage').textContent = data.message;
-                        $('#successModal').modal('show');
-    
-                        // Recargar la página después de 2 segundos
-                        setTimeout(() => location.reload(), 2000);
+                        alert(data.message || 'Partición editada con éxito');
+                        location.reload();
                     } else if (data.error) {
-                        // Mostrar modal de error
-                        document.getElementById('errorMessage').textContent = data.error;
-                        $('#errorModal').modal('show');
+                        alert('Error: ' + data.error);
                     }
                 } catch (error) {
-                    // Ocultar modal de carga y mostrar modal de error
                     $('#loadingModal').modal('hide');
-                    document.getElementById('errorMessage').textContent = 'Error al editar la partición: ' + error.message;
-                    $('#errorModal').modal('show');
+                    alert('Error al editar la partición: ' + error.message);
                 }
             }
         });
