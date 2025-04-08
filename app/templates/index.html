@@ -263,6 +263,9 @@
                     $('#loadingModal').modal('hide');
     
                     if (response.ok && data.message) {
+                        // Cerrar el modal de edición
+                        $('#editPartitionModal').modal('hide');
+    
                         // Mostrar modal de éxito
                         document.getElementById('successMessage').textContent = data.message;
                         $('#successModal').modal('show');
@@ -286,34 +289,34 @@
         // Configurar el modal de edición
         document.addEventListener('click', function (e) {
             if (e.target.classList.contains('edit-partition')) {
-                const name = e.target.getAttribute('data-name');
+                const name = e.target.getAttribute('data-name'); // Nombre completo de la partición (e.g., /dev/sda1)
                 const size = parseFloat(e.target.getAttribute('data-size'));
                 const used = parseFloat(e.target.getAttribute('data-used')); // Almacenamiento ocupado
-    
+        
                 // Configurar el modal de edición
                 document.getElementById('editPartitionName').value = name;
                 const editPartitionSizeInput = document.getElementById('editPartitionSize');
                 const editPartitionSizeNumber = document.getElementById('editPartitionSizeNumber');
                 const editPartitionSizeLabel = document.getElementById('editPartitionSizeLabel');
-    
+        
                 editPartitionSizeInput.value = size;
                 editPartitionSizeNumber.value = size;
                 editPartitionSizeInput.min = used; // El tamaño mínimo es el almacenamiento ocupado
                 editPartitionSizeInput.max = size; // El tamaño máximo es el tamaño actual de la partición
-    
+        
                 editPartitionSizeInput.addEventListener('input', function () {
                     editPartitionSizeNumber.value = this.value;
                     editPartitionSizeLabel.textContent = `Tamaño seleccionado: ${this.value} GB`;
                 });
-    
+        
                 editPartitionSizeNumber.addEventListener('input', function () {
                     editPartitionSizeInput.value = this.value;
                     editPartitionSizeLabel.textContent = `Tamaño seleccionado: ${this.value} GB`;
                 });
-    
+        
                 $('#editPartitionModal').modal('show');
             }
         });
-            </script>
+    </script>
 </body>
 </html>
