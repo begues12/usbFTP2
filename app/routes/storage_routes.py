@@ -154,10 +154,7 @@ def delete_partition():
 @storage_bp.route('/edit_partition', methods=['POST'])
 def edit_partition():
     try:
-        # Depurar los datos recibidos
-        print("Datos recibidos:", request.json)
-
-        name = request.json.get('name')  # Nombre completo de la partición (e.g., /dev/sda1)
+        name = request.json.get('name')  # Nombre completo del dispositivo (e.g., /dev/mmcblk0)
         size = float(request.json.get('size'))  # Nuevo tamaño en GB
 
         if not name or not size:
@@ -167,11 +164,11 @@ def edit_partition():
         if not name.startswith('/dev/'):
             return jsonify({'error': 'El nombre de la partición no es válido'}), 400
 
-        device = name[:-1]  # Eliminar el número de la partición para obtener el dispositivo (e.g., /dev/sda)
+        device = name[:-1]  # Eliminar el número de la partición para obtener el dispositivo (e.g., /dev/mmcblk0)
         partition_number = name[len(device):]  # Extraer el número de la partición (e.g., 1)
 
         # Cambiar el tamaño de la partición
-        command_resize = f"sudo parted {device} resizepart {partition_number} {size}GB"
+        command_resize = f"sudo parted --script {device} resizepart {partition_number} {size}GB"
         result = subprocess.run(command_resize, shell=True, text=True, stderr=subprocess.PIPE)
 
         if result.returncode != 0:
@@ -180,7 +177,7 @@ def edit_partition():
         return jsonify({'message': 'Partición editada con éxito'}), 200
     except Exception as e:
         return jsonify({'error': f'Error inesperado: {str(e)}'}), 500
-                
+                    
 # Ruta para reducir el tamaño de una partición
 @storage_bp.route('/shrink_partition', methods=['POST'])
 def shrink_partition():
