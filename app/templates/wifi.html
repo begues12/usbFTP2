@@ -92,6 +92,8 @@
         
         <!-- JavaScript para manejar el modal y actualizar la tabla -->
         <script>
+            updateWifiTable();
+            
             // Manejar el modal para conectar
             $('#connectModal').on('show.bs.modal', function (event) {
                 var button = $(event.relatedTarget); // Botón que activó el modal
@@ -131,6 +133,7 @@
         
             // Llamar a la función cada 5 segundos
             setInterval(updateWifiTable, 5000);
+            
         </script>
     <!-- Footer -->
     <footer class="bg-dark text-white text-center py-3 mt-5">
