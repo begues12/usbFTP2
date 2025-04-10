@@ -1,0 +1,62 @@
+<!-- filepath: c:\Users\afuentes\Documents\usbFTP2\app\templates\settings.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Configuración</h1>
+        <form id="settingsForm">
+            <div class="form-group">
+                <label for="usbFolder">Carpeta USB</label>
+                <input type="text" class="form-control" id="usbFolder" name="usb_folder" value="{{ settings.usb_folder }}">
+            </div>
+            <div class="form-group">
+                <label for="theme">Tema</label>
+                <select class="form-control" id="theme" name="theme">
+                    <option value="light" {% if settings.theme == 'light' %}selected{% endif %}>Claro</option>
+                    <option value="dark" {% if settings.theme == 'dark' %}selected{% endif %}>Oscuro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="language">Idioma</label>
+                <select class="form-control" id="language" name="language">
+                    <option value="es" {% if settings.language == 'es' %}selected{% endif %}>Español</option>
+                    <option value="en" {% if settings.language == 'en' %}selected{% endif %}>Inglés</option>
+                </select>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="updateSettings()">Guardar Cambios</button>
+        </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script>
+        function updateSettings() {
+            const formData = {
+                usb_folder: document.getElementById('usbFolder').value,
+                theme: document.getElementById('theme').value,
+                language: document.getElementById('language').value
+            };
+
+            fetch('/settings/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
+</body>
+</html>

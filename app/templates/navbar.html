@@ -1,12 +1,8 @@
 <!-- filepath: c:\Users\afuentes\Documents\usbFTP2\app\templates\navbar.html -->
-<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.4.4/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
         <!-- Logo y nombre de la aplicación -->
-        <a class="navbar-brand" href="#">
+        <a class="navbar-brand" href="{{ url_for('home.index') }}">
             <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" width="30" height="30" class="d-inline-block align-top">
             Omni Kairós
         </a>
@@ -15,13 +11,26 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ml-auto">
+                <!-- Enlace a Inicio -->
                 <li class="nav-item">
                     <a class="nav-link {% if request.endpoint == 'home.index' %}active{% endif %}" href="{{ url_for('home.index') }}">Inicio</a>
                 </li>
+
+                <!-- Enlace a Redes Wi-Fi -->
                 <li class="nav-item">
                     <a class="nav-link {% if request.endpoint.startswith('wifi') %}active{% endif %}" href="{{ url_for('wifi.list_wifi') }}">Redes Wi-Fi</a>
                 </li>
+
+                <!-- Enlace a Configuración -->
+         
             </ul>
         </div>
     </div>
 </nav>
+
+<!-- jQuery (versión completa) -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<!-- Popper.js -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.4.4/dist/umd/popper.min.js"></script>
+<!-- Bootstrap JS -->
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
