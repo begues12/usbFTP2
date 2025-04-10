@@ -23,9 +23,9 @@ def create_app():
     app.register_blueprint(settings_bp, url_prefix='/settings')
 
     # Configuración de la carpeta USB
-    usb_folder_path = "/media/usb"
-    initialize_usb_folder(usb_folder_path)
-    app.config['USB_FOLDER'] = usb_folder_path
+    # usb_folder_path = "/media/usb"
+    # initialize_usb_folder(usb_folder_path)
+    # app.config['USB_FOLDER'] = usb_folder_path
 
     # Crear tablas si no existen
     with app.app_context():
