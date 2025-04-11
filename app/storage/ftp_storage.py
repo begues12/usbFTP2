@@ -1,4 +1,7 @@
 from ftplib import FTP
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 class FTPStorage:
     def __init__(self):
@@ -9,14 +12,18 @@ class FTPStorage:
         Conecta al servidor FTP utilizando las credenciales proporcionadas.
         """
         host = credentials.get('host')
+        port = int(credentials.get('port', 21))  # Puerto predeterminado: 21
         username = credentials.get('username')
         password = credentials.get('password')
+
+        logging.info(f"Intentando conectar al host: {host} en el puerto: {port}")
 
         if not host or not username or not password:
             raise ValueError("Faltan credenciales para la conexión FTP")
 
         # Establecer conexión al servidor FTP
-        self.ftp = FTP(host)
+        self.ftp = FTP()
+        self.ftp.connect(host, port)  # Conectar al host y puerto
         self.ftp.login(user=username, passwd=password)
 
     def list_files(self):

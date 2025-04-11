@@ -31,3 +31,14 @@ class DropboxStorage(StorageInterface):
         with open(destination, 'wb') as file:
             file.write(response.content)
         return f"Archivo {file_path} descargado a {destination}"
+    
+    def list_files(self):
+        """
+        Lista los archivos y carpetas en el directorio raíz de Dropbox.
+        """
+        if not self.dbx:
+            raise ConnectionError("No hay conexión activa a Dropbox")
+        files = []
+        for entry in self.dbx.files_list_folder('').entries:
+            files.append(entry.name)
+        return files
