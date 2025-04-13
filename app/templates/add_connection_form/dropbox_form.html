@@ -1,0 +1,12 @@
+<!-- filepath: c:\Users\alex\Desktop\usbFTP\app\templates\forms\dropbox_form.html -->
+<form id="dropboxForm" class="connection-form d-none" method="POST" action="{{ url_for('storage.add_connection', storage_type='dropbox') }}">
+    <div class="form-group">
+        <label for="dropboxName">Nombre de la Conexión</label>
+        <input type="text" class="form-control" id="dropboxName" name="name" placeholder="Ejemplo: Mi Dropbox" required>
+    </div>
+    <div class="form-group">
+        <label for="dropboxToken">Token de Autenticación</label>
+        <input type="text" class="form-control" id="dropboxToken" name="token" placeholder="Ingresa tu token de Dropbox" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Guardar Conexión</button>
+</form>

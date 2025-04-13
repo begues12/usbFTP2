@@ -1,0 +1,12 @@
+<!-- filepath: c:\Users\alex\Desktop\usbFTP\app\templates\forms\google_drive_form.html -->
+<form id="googleDriveForm" class="connection-form d-none" method="POST" action="{{ url_for('storage.add_connection', storage_type='google_drive') }}">
+    <div class="form-group">
+        <label for="googleDriveName">Nombre de la Conexión</label>
+        <input type="text" class="form-control" id="googleDriveName" name="name" placeholder="Ejemplo: Mi Google Drive" required>
+    </div>
+    <div class="form-group">
+        <label for="googleDriveToken">Token de Autenticación</label>
+        <input type="text" class="form-control" id="googleDriveToken" name="token" placeholder="Ingresa tu token de Google Drive" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Guardar Conexión</button>
+</form>

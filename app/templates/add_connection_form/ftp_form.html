@@ -1,0 +1,24 @@
+<!-- filepath: c:\Users\alex\Desktop\usbFTP\app\templates\forms\ftp_form.html -->
+<form id="ftpForm" class="connection-form d-none" method="POST" action="{{ url_for('storage.add_connection', storage_type='ftp') }}">
+    <div class="form-group">
+        <label for="ftpName">Nombre de la Conexión</label>
+        <input type="text" class="form-control" id="ftpName" name="name" placeholder="Ejemplo: Mi Servidor FTP" required>
+    </div>
+    <div class="form-group">
+        <label for="ftpHost">Host</label>
+        <input type="text" class="form-control" id="ftpHost" name="host" placeholder="ftp.example.com" required>
+    </div>
+    <div class="form-group">
+        <label for="ftpPort">Puerto</label>
+        <input type="number" class="form-control" id="ftpPort" name="port" placeholder="21" maxlength="5" required>
+    </div>
+    <div class="form-group">
+        <label for="ftpUsername">Usuario</label>
+        <input type="text" class="form-control" id="ftpUsername" name="username" placeholder="Usuario FTP" required>
+    </div>
+    <div class="form-group">
+        <label for="ftpPassword">Contraseña</label>
+        <input type="password" class="form-control" id="ftpPassword" name="password" placeholder="Contraseña FTP" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Guardar Conexión</button>
+</form>
