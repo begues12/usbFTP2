@@ -24,7 +24,7 @@ document.getElementById('ftpForm').addEventListener('submit', async function (e)
         submitButton.textContent = 'Guardando...';
 
         // Realizar la solicitud al backend
-        const response = await fetch('/add_connection/ftp', {
+        const response = await fetch('storage/add_connection/ftp', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
