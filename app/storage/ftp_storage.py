@@ -12,7 +12,7 @@ class FTPStorage:
         Conecta al servidor FTP utilizando las credenciales proporcionadas.
         """
         host = credentials.get('host')
-        port = int(credentials.get('port', 21))  # Puerto predeterminado: 21
+        port = int(credentials.get('port'))
         username = credentials.get('username')
         password = credentials.get('password')
 

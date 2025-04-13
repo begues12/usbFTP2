@@ -26,15 +26,19 @@ def list_connections():
     return render_template('list_connections.html', connections=connections)
 
 
-@storage_bp.route('/add_connection/<storage_type>', methods=['GET', 'POST'])
+@storage_bp.route('/add_connection/<storage_type>', methods=['POST'])
 def add_connection(storage_type):
     """
     Maneja la creación de una nueva conexión según el tipo de almacenamiento.
     """
     if request.method == 'POST':
-        # Obtener los datos del formulario
-        connection_name = request.form.get('name')
-        credentials = request.form.to_dict()
+        # Obtener los datos del formulario o JSON
+        if request.is_json:
+            credentials = request.get_json()
+        else:
+            credentials = request.form.to_dict()
+
+        connection_name = credentials.get('name')
 
         # Validar el tipo de almacenamiento
         if storage_type not in storages:
@@ -50,11 +54,7 @@ def add_connection(storage_type):
         # Guardar la conexión en la base de datos
         connection = Connection(name=connection_name, type=storage_type, credentials=credentials)
         connection.save()
-        return redirect(url_for('storage.list_connections'))
-
-    # Renderizar el formulario para añadir una nueva conexión
-    return render_template('add_connection.html', storage_type=storage_type)
-
+        return jsonify({'message': 'Conexión añadida con éxito'}), 200
 # -------------------------------
 # Rutas para FTP
 # -------------------------------
