@@ -22,11 +22,26 @@
 
                 <!-- Formularios dinámicos -->
                 <div id="connectionForms">
-                    {% include '../add_connection_form/ftp_form.html' %}
-                    {% include '../add_connection_form/dropbox_form.html' %}
-                    {% include '../add_connection_form/google_drive_form.html' %}
+                    {% include 'add_connection_form/ftp_form.html' %}
+                    {% include 'add_connection_form/dropbox_form.html' %}
+                    {% include 'add_connection_form/google_drive_form.html' %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    $('#addConnectionModal').on('shown.bs.modal', function () {
+        $(this).removeAttr('aria-hidden');
+    });
+
+    document.getElementById('connectionType').addEventListener('change', function () {
+        document.querySelectorAll('.connection-form').forEach(form => form.classList.add('d-none'));
+
+        const selectedType = this.value;
+        if (selectedType) {
+            document.getElementById(`${selectedType}Form`).classList.remove('d-none');
+        }
+    });
+</script>

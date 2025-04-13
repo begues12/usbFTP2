@@ -77,23 +77,6 @@
     <!-- Incluir el modal -->
     {% include 'modals/add_connection_modal.html' %}
 
-    <script>
-        // Manejar el atributo aria-hidden cuando el modal se abre
-        $('#addConnectionModal').on('shown.bs.modal', function () {
-            $(this).removeAttr('aria-hidden');
-        });
     
-        // Manejar formularios dinámicos
-        document.getElementById('connectionType').addEventListener('change', function () {
-            // Ocultar todos los formularios
-            document.querySelectorAll('.connection-form').forEach(form => form.classList.add('d-none'));
-    
-            // Mostrar el formulario correspondiente
-            const selectedType = this.value;
-            if (selectedType) {
-                document.getElementById(`${selectedType}Form`).classList.remove('d-none');
-            }
-        });
-    </script>
 
 </html>
