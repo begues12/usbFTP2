@@ -1,4 +1,4 @@
-<!-- filepath: c:\Users\afuentes\Documents\usbFTP2\app\templates\modals\add_connection_modal.html -->
+<!-- filepath: c:\Users\alex\Desktop\usbFTP\app\templates\modals\add_connection_modal.html -->
 <div class="modal fade" id="addConnectionModal" tabindex="-1" aria-labelledby="addConnectionModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -22,52 +22,6 @@
 
                 <!-- Formularios dinámicos -->
                 <div id="connectionForms">
-                    <!-- Formulario para FTP -->
-                    <form id="ftpForm" class="connection-form d-none" method="POST" action="{{ url_for('storage.add_connection', storage_type='ftp') }}">
-                        <div class="form-group">
-                            <label for="ftpName">Nombre de la Conexión</label>
-                            <input type="text" class="form-control" id="ftpName" name="name" placeholder="Ejemplo: Mi Servidor FTP" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="ftpHost">Host</label>
-                            <input type="text" class="form-control" id="ftpHost" name="host" placeholder="ftp.example.com" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="ftpUsername">Usuario</label>
-                            <input type="text" class="form-control" id="ftpUsername" name="username" placeholder="Usuario FTP" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="ftpPassword">Contraseña</label>
-                            <input type="password" class="form-control" id="ftpPassword" name="password" placeholder="Contraseña FTP" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Guardar Conexión</button>
-                    </form>
-
-                    <!-- Formulario para Dropbox -->
-                    <form id="dropboxForm" class="connection-form d-none" method="POST" action="{{ url_for('storage.add_connection', storage_type='dropbox') }}">
-                        <div class="form-group">
-                            <label for="dropboxName">Nombre de la Conexión</label>
-                            <input type="text" class="form-control" id="dropboxName" name="name" placeholder="Ejemplo: Mi Dropbox" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="dropboxToken">Token de Autenticación</label>
-                            <input type="text" class="form-control" id="dropboxToken" name="token" placeholder="Ingresa tu token de Dropbox" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Guardar Conexión</button>
-                    </form>
-
-                    <!-- Formulario para Google Drive -->
-                    <form id="googleDriveForm" class="connection-form d-none" method="POST" action="{{ url_for('storage.add_connection', storage_type='google_drive') }}">
-                        <div class="form-group">
-                            <label for="googleDriveName">Nombre de la Conexión</label>
-                            <input type="text" class="form-control" id="googleDriveName" name="name" placeholder="Ejemplo: Mi Google Drive" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="googleDriveToken">Token de Autenticación</label>
-                            <input type="text" class="form-control" id="googleDriveToken" name="token" placeholder="Ingresa tu token de Google Drive" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Guardar Conexión</button>
-                    </form>
                 </div>
             </div>
         </div>
