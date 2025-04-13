@@ -1,0 +1,11 @@
+<!-- filepath: c:\Users\afuentes\Documents\usbFTP2\app\templates\ftp_explorer.html -->
+<div class="container mt-5">
+    <h1 class="text-center">Explorador FTP - {{ connection.name }}</h1>
+    <ul class="list-group mt-4">
+        {% for file in files %}
+        <li class="list-group-item">
+            <i class="bi bi-file-earmark"></i> {{ file }}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
