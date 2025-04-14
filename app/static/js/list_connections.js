@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton${connection.id}">
                                     <li><a class="dropdown-item mount-folder" href="#" data-id="${connection.id}">${connection.status === 'mount' ? 'Desmontar' : 'Montar'}</a></li>
                                     <li><a class="dropdown-item edit-connection" href="#" data-id="${connection.id}">Editar</a></li>
-                                    <li><a class="dropdown-item delete-connection" href="#" data-id="${connection.id}">Borrar</a></li>
+                                    <li><a class="dropdown-item delete-connection" href="#" data-id="${connection.id}" data-type="${connection.type}">Borrar</a></li>
                                 </ul>
                             </div>
                         </td>
@@ -88,10 +88,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     item.addEventListener('click', async function (event) {
                         event.preventDefault();
                         const connectionId = this.getAttribute('data-id');
+                        const connectionType = this.getAttribute('data-type'); // Obtener el tipo de conexión
                         if (confirm('¿Estás seguro de que deseas borrar esta conexión?')) {
                             try {
-                                // {type}/{id}/delete
-                                const deleteResponse = await fetch(`/storage/delete/${connectionId}`, {
+                                const deleteResponse = await fetch(`/${connectionType}/${connectionId}/delete`, {
                                     method: 'DELETE',
                                     headers: {
                                         'Content-Type': 'application/json'
@@ -110,6 +110,14 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                     });
                 });
+
+                // Verificar cambios de estado
+                connections.forEach(connection => {
+                    if (previousStates[connection.id] && previousStates[connection.id] !== connection.status) {
+                        showToast('success', `La conexión "${connection.name}" cambió de estado: ${connection.status}`);
+                    }
+                    previousStates[connection.id] = connection.status;
+                });
             } else {
                 console.error('Error al obtener las conexiones:', response.statusText);
             }
@@ -124,9 +132,13 @@ document.addEventListener('DOMContentLoaded', function () {
     function showToast(type, message) {
         const toast = type === 'success' ? document.getElementById('successToast') : document.getElementById('errorToast');
         const toastBody = type === 'success' ? document.getElementById('successToastBody') : document.getElementById('errorToastBody');
-        toastBody.textContent = message;
-        const bootstrapToast = new bootstrap.Toast(toast);
-        bootstrapToast.show();
+        if (toast && toastBody) {
+            toastBody.textContent = message;
+            const bootstrapToast = new bootstrap.Toast(toast);
+            bootstrapToast.show();
+        } else {
+            console.error('No se encontró el elemento del toast.');
+        }
     }
 
     // Llamar a fetchConnections al cargar la página
