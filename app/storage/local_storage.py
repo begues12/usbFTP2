@@ -125,7 +125,7 @@ class LocalStorage:
         gadget_path = "/sys/kernel/config/usb_gadget/mygadget"
         if not os.path.exists(gadget_path):
             print("Configurando el gadget USB...")
-            os.makedirs(gadget_path, exist_ok=True)
+            subprocess.run(['sudo', 'mkdir', '-p', gadget_path], check=True)
             subprocess.run(['sudo', 'sh', '-c', f'echo 0x1d6b > {gadget_path}/idVendor'], check=True)
             subprocess.run(['sudo', 'sh', '-c', f'echo 0x0104 > {gadget_path}/idProduct'], check=True)
             subprocess.run(['sudo', 'sh', '-c', f'echo 0x0100 > {gadget_path}/bcdDevice'], check=True)
@@ -142,7 +142,7 @@ class LocalStorage:
             subprocess.run(['sudo', 'ln', '-s', f"{gadget_path}/functions/mass_storage.0", f"{gadget_path}/configs/c.1/"], check=True)
 
             subprocess.run(['sudo', 'sh', '-c', f'echo "$(ls /sys/class/udc)" > {gadget_path}/UDC'], check=True)
-
+            
     def mount_to_gadget(self, mount_path, backing_file, lun_config_path):
         """
         Monta la carpeta local como un dispositivo USB utilizando gadget mode.
