@@ -143,12 +143,10 @@ def mount_folder(connection_id):
     """
     Monta una carpeta para que sea accesible con el gadget mode.
     """
-    # Obtener la conexión de la base de datos
     connection = Connection.query.get(connection_id)
     if not connection:
         return jsonify({'error': 'Conexión no encontrada'}), 404
 
-    # Determinar el tipo de conexión
     connection_type = connection.type
     storage_instance = storages.get(connection_type)
 
@@ -156,16 +154,11 @@ def mount_folder(connection_id):
         return jsonify({'error': f'Tipo de conexión "{connection_type}" no soportado'}), 400
 
     try:
-        # Definir las rutas necesarias para el montaje
         mount_path = f"/mnt/gadget/{connection.name}"
         backing_file = f"/home/usbFTP/backing_{connection.id}.img"
         lun_config_path = f"/sys/kernel/config/usb_gadget/mygadget/functions/mass_storage.0/lun.0/file"
 
-        # Llamar a la función específica de montaje
-        if hasattr(storage_instance, 'mount_to_gadget'):
-            storage_instance.mount_to_gadget(mount_path, backing_file, lun_config_path)
-            return jsonify({'message': f'Carpeta montada en {mount_path} y expuesta como dispositivo USB.'}), 200
-        else:
-            return jsonify({'error': f'El tipo de conexión "{connection_type}" no soporta el montaje.'}), 400
+        storage_instance.mount_to_gadget(mount_path, backing_file, lun_config_path)
+        return jsonify({'message': f'Carpeta montada en {mount_path} y expuesta como dispositivo USB.'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500

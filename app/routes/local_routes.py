@@ -76,30 +76,7 @@ def delete_local_file(connection_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@storage_bp.route('/mount/<int:connection_id>', methods=['POST'])
-def mount_folder(connection_id):
-    """
-    Monta una carpeta para que sea accesible con el gadget mode.
-    """
-    connection = Connection.query.get(connection_id)
-    if not connection:
-        return jsonify({'error': 'Conexión no encontrada'}), 404
 
-    connection_type = connection.type
-    storage_instance = storages.get(connection_type)
-
-    if not storage_instance:
-        return jsonify({'error': f'Tipo de conexión "{connection_type}" no soportado'}), 400
-
-    try:
-        mount_path = f"/mnt/gadget/{connection.name}"
-        backing_file = f"/home/usbFTP/backing_{connection.id}.img"
-        lun_config_path = f"/sys/kernel/config/usb_gadget/mygadget/functions/mass_storage.0/lun.0/file"
-
-        storage_instance.mount_to_gadget(mount_path, backing_file, lun_config_path)
-        return jsonify({'message': f'Carpeta montada en {mount_path} y expuesta como dispositivo USB.'}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
         
 @local_bp.route('/prepare', methods=['POST'])
 def prepare_local_folders():
