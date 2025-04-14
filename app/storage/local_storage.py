@@ -87,23 +87,38 @@ class LocalStorage:
         if not os.path.exists(full_path):
             os.makedirs(full_path)
             
-    def mount_to_gadget(self, mount_path):
+    def mount_to_gadget(self, mount_path, backing_file, lun_config_path):
         """
-        Monta la carpeta local en el gadget utilizando fstab.
+        Monta la carpeta local como un dispositivo USB utilizando gadget mode.
         """
-        if not self.base_path:
-            raise ValueError("Debe conectarse primero utilizando el método 'connect'.")
+        # Paso 1: Verificar si ya está montado
+        if os.path.ismount(mount_path):
+            print(f"{mount_path} ya está montado. Procediendo a desmontarlo...")
+            subprocess.run(['sudo', 'umount', mount_path], check=True)
 
-        # Asegurarse de que el directorio de montaje existe
-        if not os.path.exists(mount_path):
-            os.makedirs(mount_path)
+        # Paso 2: Crear backing file si no existe
+        if not os.path.exists(backing_file):
+            print(f"Creando backing file {backing_file}...")
+            subprocess.run(['sudo', 'dd', 'if=/dev/zero', f'of={backing_file}', 'bs=1M', 'count=64'], check=True)
+            print(f"Formateando {backing_file} como FAT32...")
+            subprocess.run(['sudo', 'mkfs.vfat', backing_file], check=True)
 
-        # Agregar entrada a fstab si no existe
-        fstab_entry = f"{self.base_path} {mount_path} none bind 0 0\n"
-        with open('/etc/fstab', 'r') as fstab:
-            if fstab_entry not in fstab.read():
-                with open('/etc/fstab', 'a') as fstab_append:
-                    fstab_append.write(fstab_entry)
+        # Paso 3: Sincronizar contenido de la carpeta con el backing file
+        temp_mount = "/mnt/temp_backing"
+        os.makedirs(temp_mount, exist_ok=True)
+        try:
+            print(f"Montando {backing_file} temporalmente en {temp_mount}...")
+            subprocess.run(['sudo', 'mount', '-o', 'loop', backing_file, temp_mount], check=True)
+            print(f"Sincronizando contenido de {self.base_path} con {backing_file}...")
+            subprocess.run(['sudo', 'rsync', '-av', f"{self.base_path}/", temp_mount], check=True)
+        finally:
+            print(f"Desmontando {temp_mount}...")
+            subprocess.run(['sudo', 'umount', temp_mount], check=True)
+            os.rmdir(temp_mount)
 
-        # Montar la carpeta inmediatamente
-        subprocess.run(['mount', mount_path], check=True)
+        # Paso 4: Actualizar configuración del gadget USB
+        print(f"Actualizando configuración del gadget USB en {lun_config_path}...")
+        with open(lun_config_path, "w") as lun_file:
+            lun_file.write(backing_file)
+
+        print("Operación completada con éxito.")
