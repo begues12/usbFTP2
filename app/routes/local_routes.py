@@ -1,11 +1,26 @@
 from flask import Blueprint, jsonify, request, send_file, render_template
 from app.storage.local_storage import LocalStorage
-import os 
+import os
 from app import db
 from app.models.connection_model import Connection
 
 local_bp = Blueprint('local', __name__)
-local_storage = LocalStorage(base_path="c:/Users/afuentes/Documents/usbFTP2/local_storage")  # Cambia la ruta según sea necesario
+
+def get_local_storage(connection_id):
+    """
+    Obtiene una instancia de LocalStorage configurada dinámicamente
+    según la conexión proporcionada.
+    """
+    connection = Connection.query.get(connection_id)
+    if not connection:
+        raise ValueError("Conexión no encontrada.")
+    if connection.type != 'local':
+        raise ValueError("El tipo de conexión no es 'local'.")
+    credentials = connection.credentials
+    base_path = credentials.get('base_path')
+    if not base_path:
+        raise ValueError("La conexión no tiene un 'base_path' configurado.")
+    return LocalStorage(base_path=base_path)
 
 @local_bp.route('/<int:connection_id>/list', methods=['GET'])
 def list_local_files(connection_id):
@@ -14,8 +29,9 @@ def list_local_files(connection_id):
     """
     folder_path = request.args.get('folder_path', "")
     try:
+        local_storage = get_local_storage(connection_id)
         files = local_storage.list_files(folder_path)
-        return render_template('local_explorer.html', files=files, connection_id=connection_id)
+        return jsonify({'files': files}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -26,6 +42,7 @@ def download_local_file(connection_id):
     """
     file_path = request.args.get('file_path')
     try:
+        local_storage = get_local_storage(connection_id)
         full_path = local_storage.download_file(file_path)
         return send_file(full_path, as_attachment=True)
     except Exception as e:
@@ -38,25 +55,21 @@ def delete_local_file(connection_id):
     """
     file_path = request.form.get('file_path')
     try:
+        local_storage = get_local_storage(connection_id)
         local_storage.delete_file(file_path)
         return jsonify({'message': 'Archivo eliminado con éxito'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    
+
 @local_bp.route('/<int:connection_id>/mount', methods=['POST'])
 def mount_local_folder(connection_id):
     """
     Monta una carpeta local para que sea accesible a través del gadget.
     """
     try:
-        connection = Connection.query.get(connection_id)
-        if not connection:
-            return jsonify({'error': 'Conexión no encontrada'}), 404
-
-        mount_path = f"/mnt/gadget/{connection.name}"
-        local_storage.connect(connection.credentials)
+        local_storage = get_local_storage(connection_id)
+        mount_path = f"/mnt/gadget/{connection_id}"
         local_storage.mount_to_gadget(mount_path)
-
         return jsonify({'message': f'Carpeta montada en {mount_path}'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
