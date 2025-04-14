@@ -42,3 +42,21 @@ def delete_local_file(connection_id):
         return jsonify({'message': 'Archivo eliminado con éxito'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+@local_bp.route('/<int:connection_id>/mount', methods=['POST'])
+def mount_local_folder(connection_id):
+    """
+    Monta una carpeta local para que sea accesible a través del gadget.
+    """
+    try:
+        connection = Connection.query.get(connection_id)
+        if not connection:
+            return jsonify({'error': 'Conexión no encontrada'}), 404
+
+        mount_path = f"/mnt/gadget/{connection.name}"
+        local_storage.connect(connection.credentials)
+        local_storage.mount_to_gadget(mount_path)
+
+        return jsonify({'message': f'Carpeta montada en {mount_path}'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

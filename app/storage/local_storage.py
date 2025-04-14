@@ -87,4 +87,23 @@ class LocalStorage:
         if not os.path.exists(full_path):
             os.makedirs(full_path)
             
-    
+    def mount_to_gadget(self, mount_path):
+        """
+        Monta la carpeta local en el gadget utilizando fstab.
+        """
+        if not self.base_path:
+            raise ValueError("Debe conectarse primero utilizando el método 'connect'.")
+
+        # Asegurarse de que el directorio de montaje existe
+        if not os.path.exists(mount_path):
+            os.makedirs(mount_path)
+
+        # Agregar entrada a fstab si no existe
+        fstab_entry = f"{self.base_path} {mount_path} none bind 0 0\n"
+        with open('/etc/fstab', 'r') as fstab:
+            if fstab_entry not in fstab.read():
+                with open('/etc/fstab', 'a') as fstab_append:
+                    fstab_append.write(fstab_entry)
+
+        # Montar la carpeta inmediatamente
+        subprocess.run(['mount', mount_path], check=True)
