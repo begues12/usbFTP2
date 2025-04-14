@@ -8,6 +8,7 @@ from app.storage.dropbox_storage import DropboxStorage
 from app.storage.google_drive_storage import GoogleDriveStorage
 from app.storage.local_storage import LocalStorage
 from app.routes.local_routes import local_bp
+from app import db
 import os
 
 storages = {
@@ -141,7 +142,7 @@ def delete_connection(connection_id):
         return jsonify({'message': 'Conexión eliminada con éxito'}), 200
     except Exception as e:
         return jsonify({'error': f'Error al eliminar la conexión: {str(e)}'}), 500
-        
+            
 @storage_bp.route('/mount/<int:connection_id>', methods=['POST'])
 def mount_folder(connection_id):
     """
