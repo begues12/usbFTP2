@@ -58,7 +58,7 @@ def download_local_file(connection_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@local_bp.route('/<int:connection_id>/delete', methods=['POST'])
+@local_bp.route('/<int:connection_id>/delete', methods=['DELETE'])
 def delete_local_file(connection_id):
     """
     Elimina un archivo o carpeta del almacenamiento local.

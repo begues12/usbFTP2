@@ -65,7 +65,7 @@ def download_file(connection_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@ftp_bp.route('/<int:connection_id>/delete', methods=['POST'])
+@ftp_bp.route('/<int:connection_id>/delete', methods=['DELETE'])
 def delete_file(connection_id):
     """
     Elimina un archivo del servidor FTP.
