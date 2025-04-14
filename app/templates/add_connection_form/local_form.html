@@ -1,4 +1,3 @@
-<!-- filepath: c:\Users\afuentes\Documents\usbFTP2\app\templates\add_connection_form\local_form.html -->
 <form id="localForm" class="connection-form d-none p-3 border rounded shadow-sm bg-light" method="POST" action="{{ url_for('storage.add_connection', storage_type='local') }}">
     <h5 class="text-center mb-4">Añadir Conexión Local</h5>
     
@@ -12,31 +11,28 @@
     </div>
 </form>
 
+<!-- Toast de éxito -->
 <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1055;">
     <div id="successConnToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="d-flex">
-            <div class="toast-body">
-                Conexión local añadida con éxito.
+            <div class="toast-body d-flex align-items-center">
+                <span class="me-2 fs-4">✔️</span>
+                <span>Conexión local añadida con éxito.</span>
             </div>
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
     </div>
 </div>
 
-<!-- Modal de error -->
-<div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title text-danger" id="errorModalLabel">Error al Crear Conexión</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+<!-- Toast de error -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1055;">
+    <div id="errorConnToast" class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body d-flex align-items-center">
+                <span class="me-2 fs-4">⚠️</span>
+                <span id="errorConnMessage">Error al crear la conexión local.</span>
             </div>
-            <div class="modal-body" id="errorModalBody">
-                <!-- El mensaje de error se llenará dinámicamente -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
     </div>
 </div>
