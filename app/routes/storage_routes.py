@@ -6,11 +6,16 @@ from app.routes.google_drive_routes import google_drive_bp
 from app.storage.ftp_storage import FTPStorage
 from app.storage.dropbox_storage import DropboxStorage
 from app.storage.google_drive_storage import GoogleDriveStorage
+from app.storage.local_storage import LocalStorage
+from app.routes.local_routes import local_bp
+
+import os
 
 storages = {
     'ftp': FTPStorage(),
     'dropbox': DropboxStorage(),
-    'google_drive': GoogleDriveStorage()
+    'google_drive': GoogleDriveStorage(),
+    'local': LocalStorage()  # Asegúrate de tener una clase LocalStorage definida
 }
 
 storage_bp = Blueprint('storage', __name__)
@@ -19,6 +24,7 @@ storage_bp = Blueprint('storage', __name__)
 storage_bp.register_blueprint(ftp_bp, url_prefix='/ftp')
 storage_bp.register_blueprint(dropbox_bp, url_prefix='/dropbox')
 storage_bp.register_blueprint(google_drive_bp, url_prefix='/google_drive')
+storage_bp.register_blueprint(local_bp, url_prefix='/local')
 
 # -------------------------------
 # Rutas generales
@@ -38,7 +44,12 @@ def list_connections():
             # Probar la conexión rápidamente
             storage_instance = storages.get(connection.type)
             status = 'pending'  # Estado predeterminado
-            if storage_instance:
+
+            # Verificar si la conexión está montada
+            if connection.type == 'local':
+                mount_path = connection.credentials.get('base_path')
+                status = 'mount' if os.path.exists(mount_path) else 'error'
+            elif storage_instance:
                 try:
                     storage_instance.test_connection(connection.credentials)
                     status = 'success'
@@ -59,7 +70,6 @@ def list_connections():
     # Renderizar el template para solicitudes normales
     return render_template('list_connections.html', connections=connections)
 
-
 @storage_bp.route('/add_connection/<storage_type>', methods=['POST'])
 def add_connection(storage_type):
     """
@@ -78,6 +88,19 @@ def add_connection(storage_type):
         if storage_type not in storages:
             return jsonify({'error': f'Tipo de almacenamiento "{storage_type}" no soportado'}), 400
 
+        # Caso especial para LocalStorage
+        if storage_type == 'local':
+            # Configurar la ruta base automáticamente
+            base_storage_path = "/home/pi/local_storage"  # Cambia esta ruta según sea necesario
+            base_path = os.path.join(base_storage_path, connection_name)
+
+            try:
+                # Crear la carpeta si no existe
+                os.makedirs(base_path, exist_ok=True)
+                credentials['base_path'] = base_path  # Agregar la ruta base a las credenciales
+            except Exception as e:
+                return jsonify({'error': f'Error al crear la carpeta local: {str(e)}'}), 500
+
         # Validar las credenciales antes de guardar
         storage_instance = storages[storage_type]
         try:
@@ -89,3 +112,24 @@ def add_connection(storage_type):
         connection = Connection(name=connection_name, type=storage_type, credentials=credentials)
         connection.save()
         return jsonify({'message': 'Conexión añadida con éxito'}), 200
+        
+@storage_bp.route('/mount/<int:connection_id>', methods=['POST'])
+def mount_folder(connection_id):
+    """
+    Monta una carpeta para que sea accesible con el gadget mode.
+    """
+    connection = Connection.query.get(connection_id)
+    if not connection:
+        return jsonify({'error': 'Conexión no encontrada'}), 404
+
+    try:
+        mount_path = f"/mnt/gadget/{connection.name}"
+        os.makedirs(mount_path, exist_ok=True)
+
+        # Simular el montaje (reemplaza esto con la lógica real)
+        with open(os.path.join(mount_path, 'info.txt'), 'w') as f:
+            f.write(f"Conexión montada: {connection.name}")
+
+        return jsonify({'message': f'Carpeta montada en {mount_path}'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
