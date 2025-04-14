@@ -53,7 +53,7 @@
                 <tr>
                     <td>
                         {% if file.is_dir %}
-                        <a href="{{ url_for('local.list_local_files', connection_id=connection_id, folder_path=file.path) }}">
+                        <a href="{{ url_for('storage.local.list_local_files', connection_id=connection_id, folder_path=file.path) }}">
                             <i class="bi bi-folder-fill text-warning"></i> {{ file.name }}
                         </a>
                         {% else %}
