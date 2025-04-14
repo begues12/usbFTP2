@@ -31,8 +31,8 @@ document.addEventListener('DOMContentLoaded', function () {
                                 connection.status === 'success' ? 'bg-success' :
                                 connection.status === 'error' ? 'bg-danger' : 'bg-warning'
                             }"></span>
+                            ${connection.name}
                         </td>
-                        <td>${connection.name}</td>
                         <td>${connection.type.charAt(0).toUpperCase() + connection.type.slice(1)}</td>
                         <td>
                             <div class="dropdown">

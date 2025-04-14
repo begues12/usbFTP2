@@ -11,10 +11,10 @@ from app.routes.local_routes import local_bp
 import os
 
 storages = {
-    'ftp': FTPStorage(),
-    'dropbox': DropboxStorage(),
-    'google_drive': GoogleDriveStorage(),
-    'local': LocalStorage()  # Asegúrate de tener una clase LocalStorage definida
+    'ftp'           : FTPStorage(),
+    'dropbox'       : DropboxStorage(),
+    'google_drive'  : GoogleDriveStorage(),
+    'local'         : LocalStorage()     
 }
 
 storage_bp = Blueprint('storage', __name__)
