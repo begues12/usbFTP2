@@ -73,11 +73,3 @@ class FTPStorage:
         if not self.ftp:
             raise ConnectionError("No hay conexión activa al servidor FTP")
         return self.ftp.nlst()
-
-    def disconnect(self):
-        """
-        Cierra la conexión al servidor FTP.
-        """
-        if self.ftp:
-            self.ftp.quit()
-            self.ftp = None

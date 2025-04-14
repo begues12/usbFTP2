@@ -88,27 +88,22 @@ def add_connection(storage_type):
         if storage_type not in storages:
             return jsonify({'error': f'Tipo de almacenamiento "{storage_type}" no soportado'}), 400
 
-        # Caso especial para LocalStorage
         if storage_type == 'local':
-            # Configurar la ruta base automáticamente
-            base_storage_path = "/home/usbFTP/"  # Cambia esta ruta según sea necesario
+            base_storage_path = "/home/usbFTP/"
             base_path = os.path.join(base_storage_path, connection_name)
 
             try:
-                # Crear la carpeta si no existe
                 os.makedirs(base_path, exist_ok=True)
-                credentials['base_path'] = base_path  # Agregar la ruta base a las credenciales
+                credentials['base_path'] = base_path 
             except Exception as e:
                 return jsonify({'error': f'Error al crear la carpeta local: {str(e)}'}), 500
 
-        # Validar las credenciales antes de guardar
         storage_instance = storages[storage_type]
         try:
-            storage_instance.connect(credentials)  # Intenta conectar con las credenciales
+            storage_instance.connect(credentials) 
         except Exception as e:
             return jsonify({'error': f'Error al validar la conexión: {str(e)}'}), 400
 
-        # Guardar la conexión en la base de datos
         connection = Connection(name=connection_name, type=storage_type, credentials=credentials)
         connection.save()
         return jsonify({'message': 'Conexión añadida con éxito'}), 200
