@@ -1,5 +1,8 @@
 from flask import Blueprint, jsonify, request, send_file, render_template
 from app.storage.local_storage import LocalStorage
+import os 
+from app.models import Connection
+from app import db
 
 local_bp = Blueprint('local', __name__)
 local_storage = LocalStorage(base_path="c:/Users/afuentes/Documents/usbFTP2/local_storage")  # Cambia la ruta según sea necesario

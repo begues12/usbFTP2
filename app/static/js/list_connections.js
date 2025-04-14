@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         const connectionType = this.getAttribute('data-type'); // Obtener el tipo de conexión
                         if (confirm('¿Estás seguro de que deseas borrar esta conexión?')) {
                             try {
-                                const deleteResponse = await fetch(`/${connectionType}/${connectionId}/delete`, {
+                                const deleteResponse = await fetch(`/storage/${connectionType}/${connectionId}/delete`, {
                                     method: 'DELETE',
                                     headers: {
                                         'Content-Type': 'application/json'

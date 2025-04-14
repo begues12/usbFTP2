@@ -4,6 +4,10 @@ class StorageInterface(ABC):
     """
     Clase base para definir la interfaz común de almacenamiento.
     """
+    @abstractmethod
+    def connect(self, credentials):
+        """Conecta al servicio de almacenamiento utilizando las credenciales proporcionadas."""
+        pass
 
     @abstractmethod
     def login(self, credentials):
