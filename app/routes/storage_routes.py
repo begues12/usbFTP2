@@ -8,9 +8,9 @@ from app.storage.dropbox_storage import DropboxStorage
 from app.storage.google_drive_storage import GoogleDriveStorage
 
 storages = {
-    'ftp': FTPStorage,  # Aquí deberías importar la clase FTPStorage
-    'dropbox': DropboxStorage,  # Aquí deberías importar la clase DropboxStorage
-    'google_drive': GoogleDriveStorage  # Aquí deberías importar la clase GoogleDriveStorage
+    'ftp': FTPStorage(),
+    'dropbox': DropboxStorage(),
+    'google_drive': GoogleDriveStorage()
 }
 
 storage_bp = Blueprint('storage', __name__)
@@ -44,6 +44,8 @@ def list_connections():
                     status = 'success'
                 except Exception:
                     status = 'error'
+            else:
+                status = 'unsupported'
 
             result.append({
                 'id': connection.id,

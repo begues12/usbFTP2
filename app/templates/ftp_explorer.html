@@ -40,11 +40,11 @@
                 <tr>
                     <td>
                         {% if file.is_dir %}
-                        <a href="{{ url_for('storage.explore_folder', connection_id=connection.id, folder_path=file.path) }}">
-                            <i class="bi bi-folder-fill text-warning"></i> {{ file }}
+                        <a href="{{ url_for('storage.ftp.explore_folder', connection_id=connection.id, folder_path=file.path) }}">
+                            <i class="bi bi-folder-fill text-warning"></i> {{ file.name }}
                         </a>
                         {% else %}
-                        <i class="bi bi-file-earmark"></i> {{ file }}
+                        <i class="bi bi-file-earmark"></i> {{ file.name }}
                         {% endif %}
                     </td>
                     <td>
@@ -57,17 +57,20 @@
                     <td>{{ file.modified_time}}</td>
                     <td>
                         {% if not file.is_dir %}
-                        <a href="{{ url_for('storage.download_file', connection_id=connection.id, file_path=file.path) }}" class="btn btn-primary btn-sm" aria-label="Descargar {{ file }}">
+                        <!-- Botón para descargar -->
+                        <a href="{{ url_for('storage.ftp.download_file', connection_id=connection.id, file_path=file.path) }}" 
+                        class="btn btn-primary btn-sm" 
+                        aria-label="Descargar {{ file.name }}">
                             <i class="bi bi-download"></i> Descargar
                         </a>
-                        {% if file.endswith('.txt') or file.endswith('.log') %}
-                        <a href="{{ url_for('storage.view_file', connection_id=connection.id, file_path=file.path) }}" class="btn btn-info btn-sm" aria-label="Ver {{ file }}">
-                            <i class="bi bi-eye"></i> Ver
-                        </a>
-                        {% endif %}
-                        <a href="{{ url_for('storage.delete_file', connection_id=connection.id, file_path=file.path) }}" class="btn btn-danger btn-sm" aria-label="Eliminar {{ file }}">
-                            <i class="bi bi-trash"></i> Eliminar
-                        </a>
+
+                        <!-- Botón para eliminar -->
+                        <form action="{{ url_for('storage.ftp.delete_file', connection_id=connection.id) }}" method="POST" style="display:inline;">
+                            <input type="hidden" name="file_path" value="{{ file.path }}">
+                            <button type="submit" class="btn btn-danger btn-sm" aria-label="Eliminar {{ file.name }}">
+                                <i class="bi bi-trash"></i> Eliminar
+                            </button>
+                        </form>
                         {% endif %}
                     </td>
                 </tr>
