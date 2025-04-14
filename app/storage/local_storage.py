@@ -118,16 +118,44 @@ class LocalStorage:
             subprocess.run(['sudo', 'umount', temp_mount], check=True)
             os.rmdir(temp_mount)
 
+    def configure_gadget(self):
+        """
+        Configura automáticamente el gadget USB.
+        """
+        gadget_path = "/sys/kernel/config/usb_gadget/mygadget"
+        if not os.path.exists(gadget_path):
+            print("Configurando el gadget USB...")
+            os.makedirs(gadget_path, exist_ok=True)
+            subprocess.run(['sudo', 'sh', '-c', f'echo 0x1d6b > {gadget_path}/idVendor'], check=True)
+            subprocess.run(['sudo', 'sh', '-c', f'echo 0x0104 > {gadget_path}/idProduct'], check=True)
+            subprocess.run(['sudo', 'sh', '-c', f'echo 0x0100 > {gadget_path}/bcdDevice'], check=True)
+            subprocess.run(['sudo', 'sh', '-c', f'echo 0x0200 > {gadget_path}/bcdUSB'], check=True)
+
+            os.makedirs(f"{gadget_path}/strings/0x409", exist_ok=True)
+            subprocess.run(['sudo', 'sh', '-c', f'echo "0123456789" > {gadget_path}/strings/0x409/serialnumber'], check=True)
+            subprocess.run(['sudo', 'sh', '-c', f'echo "Raspberry Pi" > {gadget_path}/strings/0x409/manufacturer'], check=True)
+            subprocess.run(['sudo', 'sh', '-c', f'echo "USB Gadget" > {gadget_path}/strings/0x409/product'], check=True)
+
+            os.makedirs(f"{gadget_path}/configs/c.1", exist_ok=True)
+            os.makedirs(f"{gadget_path}/functions/mass_storage.0", exist_ok=True)
+            subprocess.run(['sudo', 'sh', '-c', f'echo 1 > {gadget_path}/functions/mass_storage.0/stall'], check=True)
+            subprocess.run(['sudo', 'ln', '-s', f"{gadget_path}/functions/mass_storage.0", f"{gadget_path}/configs/c.1/"], check=True)
+
+            subprocess.run(['sudo', 'sh', '-c', f'echo "$(ls /sys/class/udc)" > {gadget_path}/UDC'], check=True)
+
     def mount_to_gadget(self, mount_path, backing_file, lun_config_path):
         """
         Monta la carpeta local como un dispositivo USB utilizando gadget mode.
         """
-        # Paso 1: Verificar si ya está montado
+        # Paso 1: Configurar el gadget USB si no está configurado
+        self.configure_gadget()
+
+        # Paso 2: Verificar si ya está montado
         if os.path.ismount(mount_path):
             print(f"{mount_path} ya está montado. Procediendo a desmontarlo...")
             subprocess.run(['sudo', 'umount', mount_path], check=True)
 
-        # Paso 2: Actualizar configuración del gadget USB
+        # Paso 3: Actualizar configuración del gadget USB
         print(f"Actualizando configuración del gadget USB en {lun_config_path}...")
         with open(lun_config_path, "w") as lun_file:
             lun_file.write(backing_file)
