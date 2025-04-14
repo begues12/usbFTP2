@@ -50,6 +50,17 @@ document.addEventListener('DOMContentLoaded', function () {
                     connectionsTable.appendChild(row);
                 });
 
+
+                document.querySelectorAll('.clickable-row').forEach(row => {
+                    row.addEventListener('click', function () {
+                        const url = this.getAttribute('data-url');
+                        if (url) {
+                            window.location.href = url; // Redirigir a la URL
+                        }
+                    });
+                });
+
+
                 // Manejar las acciones del menú desplegable
                 document.querySelectorAll('.mount-folder').forEach(item => {
                     item.addEventListener('click', async function (event) {
@@ -63,13 +74,13 @@ document.addEventListener('DOMContentLoaded', function () {
                                 }
                             });
                             if (mountResponse.ok) {
-                                showToast('success', 'Operación de montaje/desmontaje realizada con éxito.');
+                                showModal('success', 'Operación de montaje/desmontaje realizada con éxito.');
                                 fetchConnections(); // Actualizar la lista de conexiones
                             } else {
-                                showToast('error', 'Error al realizar la operación de montaje/desmontaje.');
+                                showModal('error', 'Error al realizar la operación de montaje/desmontaje.');
                             }
                         } catch (error) {
-                            showToast('error', 'Error inesperado al realizar la operación de montaje/desmontaje.');
+                            showModal('error', 'Error inesperado al realizar la operación de montaje/desmontaje.');
                         }
                     });
                 });
@@ -120,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Verificar cambios de estado
                 connections.forEach(connection => {
                     if (previousStates[connection.id] && previousStates[connection.id] !== connection.status) {
-                        showToast('success', `La conexión "${connection.name}" cambió de estado: ${connection.status}`);
+                        showModal('success', `La conexión "${connection.name}" cambió de estado: ${connection.status}`);
                     }
                     previousStates[connection.id] = connection.status;
                 });
@@ -135,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    function showToast(type, message) {
+    function showModal(type, message) {
         const toast = type === 'success' ? document.getElementById('successToast') : document.getElementById('errorToast');
         const toastBody = type === 'success' ? document.getElementById('successToastBody') : document.getElementById('errorToastBody');
         if (toast && toastBody) {
