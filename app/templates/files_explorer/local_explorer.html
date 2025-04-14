@@ -56,11 +56,11 @@
                     <td>{{ file.modified_time }}</td>
                     <td>
                         {% if not file.is_dir %}
-                        <a href="{{ url_for('local.download_local_file', connection_id=connection_id, file_path=file.path) }}" class="btn btn-primary btn-sm">
+                        <a href="{{ url_for('storage.local.download_local_file', connection_id=connection_id, file_path=file.path) }}" class="btn btn-primary btn-sm">
                             Descargar
                         </a>
                         {% endif %}
-                        <form action="{{ url_for('local.delete_local_file', connection_id=connection_id) }}" method="POST" style="display:inline;">
+                        <form action="{{ url_for('storage.local.delete_local_file', connection_id=connection_id) }}" method="POST" style="display:inline;">
                             <input type="hidden" name="file_path" value="{{ file.path }}">
                             <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
                         </form>
