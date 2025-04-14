@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             async () => {
                                 try {
                                     // Realizar la solicitud para eliminar la conexión
-                                    const deleteResponse = await fetch(`/delete_connection/${connectionId}`, {
+                                    const deleteResponse = await fetch(`/storage/delete_connection/${connectionId}`, {
                                         method: 'POST',
                                         headers: {
                                             'Content-Type': 'application/json'
