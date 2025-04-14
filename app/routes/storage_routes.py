@@ -90,7 +90,7 @@ def add_connection(storage_type):
         # Caso especial para LocalStorage
         if storage_type == 'local':
             # Configurar la ruta base automáticamente
-            base_storage_path = "/home/pi/local_storage"  # Cambia esta ruta según sea necesario
+            base_storage_path = "/home/usbFTP/"  # Cambia esta ruta según sea necesario
             base_path = os.path.join(base_storage_path, connection_name)
 
             try:
