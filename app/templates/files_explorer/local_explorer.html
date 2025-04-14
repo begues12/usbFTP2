@@ -12,8 +12,13 @@
 <body>
     {% include 'navbar.html' %}
     
+    <div class="header text-center">
+        <div class="container">
+            <h1>Explorador Local</h1>
+        </div>
+    </div>
+
     <div class="container mt-5">
-        <h1 class="text-center">Explorador Local</h1>
 
         <!-- Mostrar mensaje de error si existe -->
         {% if error %}
@@ -26,7 +31,7 @@
         <div class="mb-3">
             {% if folder_path %}
             <!-- Si no estás en la raíz, calcula la carpeta anterior -->
-            {% set parent_folder = folder_path.rsplit('/', 1)[0] %}
+            {% set parent_folder = folder_path.rsplit('/', 1)[0] if '/' in folder_path else '' %}
             <a href="{{ url_for('storage.local.list_local_files', connection_id=connection_id, folder_path=parent_folder) }}" class="btn btn-secondary">
                 <i class="bi bi-arrow-left"></i> Volver
             </a>
