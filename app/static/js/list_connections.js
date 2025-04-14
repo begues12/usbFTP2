@@ -34,8 +34,8 @@ document.addEventListener('DOMContentLoaded', function () {
                             ${connection.name}
                         </td>
                         <td>${connection.type.charAt(0).toUpperCase() + connection.type.slice(1)}</td>
-                        <td>
-                            <div class="dropdown">
+                        <td class="text-right justify-content-end">
+                            <div class="dropdown ">
                                 <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton${connection.id}" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="bi bi-three-dots-vertical"></i>
                                 </button>
