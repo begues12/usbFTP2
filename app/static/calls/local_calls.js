@@ -18,16 +18,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (response.ok) {
                     // Mostrar un mensaje de éxito
-                    const toast = new bootstrap.Toast(document.getElementById('successConnToast'));
+                    const toast = new bootstrap.Toast(document.getElementById('successLocalConnToast'));
                     toast.show();
 
                     // Recargar la página después de 2 segundos
                     setTimeout(() => location.reload(), 2000);
                 } else {
                     // Manejar errores del backend
-                    const error = await response.json();
-                    errorModalBody.textContent = error.error || 'Ocurrió un error desconocido.';
-                    errorModal.show();
+                    const toast = new bootstrap.Toast(document.getElementById('errorLocalConnToast'));
+                    toast.show();
                 }
             } catch (error) {
                 console.error('Error al añadir la conexión local:', error);
