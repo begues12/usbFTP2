@@ -4,6 +4,16 @@ import dropbox
 class DropboxStorage(StorageInterface):
     def __init__(self):
         self.dbx = None
+        
+    def connect(self, credentials):
+        """
+        Conecta a Dropbox utilizando las credenciales proporcionadas.
+        """
+        token = credentials.get('token')
+        if not token:
+            raise ValueError("El token de autenticación es obligatorio")
+        self.dbx = dropbox.Dropbox(token)
+        return "Conectado a Dropbox con éxito"
 
     def login(self, credentials):
         token = credentials.get('token')

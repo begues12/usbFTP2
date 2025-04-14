@@ -8,7 +8,6 @@ from app.storage.dropbox_storage import DropboxStorage
 from app.storage.google_drive_storage import GoogleDriveStorage
 from app.storage.local_storage import LocalStorage
 from app.routes.local_routes import local_bp
-
 import os
 
 storages = {
