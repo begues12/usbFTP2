@@ -171,18 +171,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    function showModal(type, message) {
-        const toast = type === 'success' ? document.getElementById('successToast') : document.getElementById('errorToast');
-        const toastBody = type === 'success' ? document.getElementById('successToastBody') : document.getElementById('errorToastBody');
-        if (toast && toastBody) {
-            toastBody.textContent = message;
-            const bootstrapToast = new bootstrap.Toast(toast);
-            bootstrapToast.show();
-        } else {
-            console.error('No se encontró el elemento del toast.');
-        }
-    }
-
     // Llamar a fetchConnections al cargar la página
     fetchConnections();
 });
