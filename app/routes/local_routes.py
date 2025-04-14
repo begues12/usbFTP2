@@ -61,6 +61,20 @@ def download_local_file(connection_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+#Delete connection
+@local_bp.route('/<int:connection_id>/delete_connection', methods=['POST'])
+def delete_local_connection(connection_id):
+    """
+    Elimina una conexión de tipo LocalStorage.
+    """
+    connection = Connection.query.get(connection_id)
+    if connection:
+        db.session.delete(connection)
+        db.session.commit()
+        return jsonify({'message': 'Conexión eliminada con éxito'}), 200
+    else:
+        return jsonify({'error': 'Conexión no encontrada'}), 404
+
 @local_bp.route('/<int:connection_id>/delete', methods=['POST'])
 def delete_local_file(connection_id):
     """

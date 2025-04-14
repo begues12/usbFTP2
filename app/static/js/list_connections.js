@@ -84,28 +84,34 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
 
                 document.querySelectorAll('.delete-connection').forEach(item => {
-                    item.addEventListener('click', async function (event) {
+                    item.addEventListener('click', function (event) {
                         event.preventDefault();
                         const connectionId = this.getAttribute('data-id');
                         const connectionType = this.getAttribute('data-type'); // Obtener el tipo de conexión
-                        if (confirm('¿Estás seguro de que deseas borrar esta conexión?')) {
-                            try {
-                                const deleteResponse = await fetch(`/${connectionType}/${connectionId}/delete`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
+                
+                        // Mostrar el modal de confirmación
+                        showConfirmModal(
+                            'Confirmar eliminación',
+                            '¿Estás seguro de que deseas borrar esta conexión?',
+                            async () => {
+                                try {
+                                    const deleteResponse = await fetch(`/${connectionType}/${connectionId}/delete_connection`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json'
+                                        }
+                                    });
+                                    if (deleteResponse.ok) {
+                                        showModal('success', 'Conexión borrada con éxito.');
+                                        fetchConnections(); // Actualizar la lista de conexiones
+                                    } else {
+                                        showModal('error', 'Error al borrar la conexión.');
                                     }
-                                });
-                                if (deleteResponse.ok) {
-                                    showModal('success', 'Conexión borrada con éxito.');
-                                    fetchConnections(); // Actualizar la lista de conexiones
-                                } else {
-                                    showModal('error', 'Error al borrar la conexión.');
+                                } catch (error) {
+                                    showModal('error', 'Error inesperado al borrar la conexión.');
                                 }
-                            } catch (error) {
-                                showModal('error', 'Error inesperado al borrar la conexión.');
                             }
-                        }
+                        );
                     });
                 });
 
