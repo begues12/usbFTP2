@@ -1,7 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
     const localForm = document.getElementById('localForm');
-    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-    const errorModalBody = document.getElementById('errorModalBody');
 
     if (localForm) {
         localForm.addEventListener('submit', async function (event) {
@@ -29,9 +27,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     toast.show();
                 }
             } catch (error) {
-                console.error('Error al añadir la conexión local:', error);
-                errorModalBody.textContent = 'Ocurrió un error inesperado. Por favor, inténtalo de nuevo.';
-                errorModal.show();
+                const toast = new bootstrap.Toast(document.getElementById('errorLocalConnToast'));
+                toast.show();
             }
         });
     }
