@@ -26,6 +26,36 @@ class FTPStorage:
         self.ftp.connect(host, port)  # Conectar al host y puerto
         self.ftp.login(user=username, passwd=password)
 
+    def test_connection(self, credentials):
+        """
+        Prueba rápidamente la conexión al servidor FTP.
+        """
+        host = credentials.get('host')
+        port = int(credentials.get('port', 21))  # Puerto predeterminado: 21
+        username = credentials.get('username')
+        password = credentials.get('password')
+
+        logging.info(f"Probando conexión al host: {host} en el puerto: {port}")
+
+        if not host or not username or not password:
+            raise ValueError("Faltan credenciales para la conexión FTP")
+
+        try:
+            # Establecer conexión temporal para probar
+            ftp = FTP()
+            ftp.connect(host, port, timeout=5)  # Tiempo de espera corto para la prueba
+            ftp.login(user=username, passwd=password)
+            ftp.quit()
+            logging.info("Conexión FTP exitosa")
+            return True
+        except (error_perm, error_temp, error_proto, error_reply) as e:
+            logging.error(f"Error en la conexión FTP: {str(e)}")
+            return False
+        except Exception as e:
+            logging.error(f"Error inesperado al conectar al servidor FTP: {str(e)}")
+            return False
+
+
     def list_files(self):
         """
         Lista los archivos y carpetas en el directorio actual del servidor FTP.

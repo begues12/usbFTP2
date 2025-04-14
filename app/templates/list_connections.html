@@ -1,33 +1,100 @@
-<!-- filepath: c:\Users\afuentes\Documents\usbFTP2\app\templates\list_connections.html -->
+<style>
+    .status-dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 10px;
+    }
+    
+    .bg-success {
+        background-color: #28a745; /* Verde */
+    }
+    
+    .bg-danger {
+        background-color: #dc3545; /* Rojo */
+    }
+    
+    .bg-warning {
+        background-color: #ffc107; /* Naranja */
+    }
+</style>
+
 <div class="container mt-5">
-    {% if connections %}
-    <table class="table table-striped mt-4">
+    <h1 class="text-center">Conexiones Guardadas</h1>
+    <table id="connectionsTable" class="table table-striped mt-4">
         <thead>
             <tr>
+                <th>Estado</th>
                 <th>Nombre</th>
                 <th>Tipo</th>
-                <th>Acciones</th>
             </tr>
         </thead>
-        <tbody>
-            {% for connection in connections %}
-            <tr>
-                <td>{{ connection.name }}</td>
-                <td>{{ connection.type|capitalize }}</td>
-                <td>
-                    {% if connection.type == 'ftp' %}
-                    <a href="{{ url_for('storage.list_ftp_files', connection_id=connection.id) }}" class="btn btn-primary btn-sm">Explorar</a>
-                    {% elif connection.type == 'dropbox' %}
-                    <a href="{{ url_for('storage.list_dropbox_files', connection_id=connection.id) }}" class="btn btn-info btn-sm">Explorar</a>
-                    {% elif connection.type == 'google_drive' %}
-                    <a href="{{ url_for('storage.list_google_drive_files', connection_id=connection.id) }}" class="btn btn-success btn-sm">Explorar</a>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
+        <tbody id="connectionsTableBody">
+            <!-- Las filas se actualizarán dinámicamente -->
         </tbody>
     </table>
-    {% else %}
-    <p class="text-center text-muted">No hay conexiones guardadas. Añade una nueva conexión para comenzar.</p>
-    {% endif %}
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        async function fetchConnections() {
+            try {
+                const response = await fetch('/storage/connections', {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+    
+                if (response.ok) {
+                    const connections = await response.json();
+                    const connectionsTable = document.querySelector('#connectionsTableBody');
+    
+                    if (!connectionsTable) {
+                        console.error('El elemento #connectionsTableBody no existe en el DOM.');
+                        return;
+                    }
+    
+                    connectionsTable.innerHTML = '';
+    
+                    connections.forEach(connection => {
+                        const row = document.createElement('tr');
+                        row.classList.add('clickable-row');
+                        row.setAttribute('data-url', `/storage/${connection.type}/${connection.id}/list`);
+                        row.innerHTML = `
+                            <td>
+                                <span class="status-dot ${
+                                    connection.status === 'success' ? 'bg-success' :
+                                    connection.status === 'error' ? 'bg-danger' : 'bg-warning'
+                                }"></span>
+                            </td>
+                            <td>${connection.name}</td>
+                            <td>${connection.type.charAt(0).toUpperCase() + connection.type.slice(1)}</td>
+                        `;
+                        connectionsTable.appendChild(row);
+                    });
+    
+                    // Hacer que las filas sean clicables
+                    document.querySelectorAll('.clickable-row').forEach(row => {
+                        row.addEventListener('click', function () {
+                            const url = this.getAttribute('data-url');
+                            if (url) {
+                                window.location.href = url;
+                            }
+                        });
+                    });
+                } else {
+                    console.error('Error al obtener las conexiones:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Error al realizar la solicitud:', error);
+            }
+        }
+    
+        // Llamar a fetchConnections cada 5 segundos
+        setInterval(fetchConnections, 5000);
+    
+        // Llamar a fetchConnections al cargar la página
+        fetchConnections();
+    });
+</script>

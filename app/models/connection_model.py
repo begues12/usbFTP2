@@ -22,11 +22,12 @@ class Connection(BaseModel):
         db.session.delete(self)
         db.session.commit()
 
+
+
     @staticmethod
     def get_all():
-        """Obtiene todas las conexiones."""
+        """Obtiene todas las conexiones guardadas en la base de datos."""
         return Connection.query.all()
-
     @staticmethod
     def get_by_id(connection_id):
         """Obtiene una conexión por su ID."""

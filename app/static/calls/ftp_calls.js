@@ -18,13 +18,11 @@ document.getElementById('ftpForm').addEventListener('submit', async function (e)
     };
 
     try {
-        // Mostrar un indicador de carga (opcional)
         const submitButton = document.querySelector('#ftpForm button[type="submit"]');
         submitButton.disabled = true;
         submitButton.textContent = 'Guardando...';
 
-        // Realizar la solicitud al backend
-        const response = await fetch('storage/add_connection/ftp', {
+        const response = await fetch('/storage/add_connection/ftp', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -34,10 +32,11 @@ document.getElementById('ftpForm').addEventListener('submit', async function (e)
 
         const data = await response.json();
 
-        // Manejar la respuesta del backend
         if (response.ok) {
-            alert('Conexión FTP añadida con éxito');
-            // Opcional: Recargar la lista de conexiones o limpiar el formulario
+            const successToast = document.getElementById('successConnToast');
+            const toast = new bootstrap.Toast(successToast);
+            toast.show();
+
             document.getElementById('ftpForm').reset();
         } else {
             alert(`Error: ${data.error}`);
@@ -45,7 +44,7 @@ document.getElementById('ftpForm').addEventListener('submit', async function (e)
     } catch (error) {
         alert(`Error al añadir la conexión FTP: ${error.message}`);
     } finally {
-        // Restaurar el estado del botón
+        const submitButton = document.querySelector('#ftpForm button[type="submit"]');
         submitButton.disabled = false;
         submitButton.textContent = 'Guardar Conexión';
     }

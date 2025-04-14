@@ -5,17 +5,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Redes Wi-Fi</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
     <!-- Incluir el navbar -->
     {% include 'navbar.html' %}
 
-    <!-- Main Content -->
-    <div class="container mt-5">
-        <h1 class="text-center">Gestión de Redes Wi-Fi</h1>
+    <div class="header text-center">
+        <div class="container">
+            <h1>Listado de Redes Wi-Fi</h1>
+        </div>
+    </div>
 
-        <!-- Flash Messages -->
+    <div class="container mt-5">
+
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         <div class="mt-3">
@@ -33,7 +37,6 @@
 
         <!-- Lista de redes Wi-Fi -->
         <div id="wifi-container">
-            <h2 class="mt-4">Redes Disponibles</h2>
             <table class="table table-striped">
                 <thead>
                     <tr>

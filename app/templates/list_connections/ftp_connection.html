@@ -1,0 +1,8 @@
+<!-- filepath: c:\Users\afuentes\Documents\usbFTP2\app\templates\connections\ftp_connection.html -->
+<tr>
+    <td>{{ connection.name }}</td>
+    <td>{{ connection.type|capitalize }}</td>
+    <td>
+        <a href="{{ url_for('storage.list_ftp_files', connection_id=connection.id) }}" class="btn btn-primary btn-sm">Explorar</a>
+    </td>
+</tr>
