@@ -86,8 +86,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.querySelectorAll('.delete-connection').forEach(item => {
                     item.addEventListener('click', function (event) {
                         event.preventDefault();
-                        const connectionId = this.getAttribute('data-id');
-                        const connectionType = this.getAttribute('data-type'); // Obtener el tipo de conexión
+                        const connectionId = this.getAttribute('data-id'); // Obtener el ID de la conexión
                 
                         // Mostrar el modal de confirmación
                         showConfirmModal(
@@ -95,17 +94,20 @@ document.addEventListener('DOMContentLoaded', function () {
                             '¿Estás seguro de que deseas borrar esta conexión?',
                             async () => {
                                 try {
-                                    const deleteResponse = await fetch(`/${connectionType}/${connectionId}/delete_connection`, {
+                                    // Realizar la solicitud para eliminar la conexión
+                                    const deleteResponse = await fetch(`/delete_connection/${connectionId}`, {
                                         method: 'POST',
                                         headers: {
                                             'Content-Type': 'application/json'
                                         }
                                     });
+                
                                     if (deleteResponse.ok) {
                                         showModal('success', 'Conexión borrada con éxito.');
                                         fetchConnections(); // Actualizar la lista de conexiones
                                     } else {
-                                        showModal('error', 'Error al borrar la conexión.');
+                                        const errorData = await deleteResponse.json();
+                                        showModal('error', errorData.error || 'Error al borrar la conexión.');
                                     }
                                 } catch (error) {
                                     showModal('error', 'Error inesperado al borrar la conexión.');

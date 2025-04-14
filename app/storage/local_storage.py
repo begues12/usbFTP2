@@ -17,6 +17,15 @@ class LocalStorage:
         if not os.path.exists(self.base_path):
             os.makedirs(self.base_path)
 
+    def disconnect(self, credentials):
+        """
+        Realiza las operaciones necesarias para desconectar LocalStorage.
+        """
+        base_path = credentials.get('base_path')
+        if base_path and os.path.exists(base_path):
+            # Aquí puedes realizar operaciones adicionales si es necesario
+            print(f"Desmontando LocalStorage en {base_path}")
+        
     def list_files(self, folder_path=""):
         """
         Lista los archivos y carpetas en la ruta especificada.
@@ -77,3 +86,5 @@ class LocalStorage:
         full_path = os.path.join(self.base_path, folder_name)
         if not os.path.exists(full_path):
             os.makedirs(full_path)
+            
+    

@@ -18,6 +18,12 @@ class GoogleDriveStorage(StorageInterface):
         self.drive = GoogleDrive(self.gauth)
         return "Conectado a Google Drive con éxito"
 
+    def disconnect(self, credentials):
+        """
+        Realiza las operaciones necesarias para desconectar GoogleDriveStorage.
+        """
+        print("Desconexión de Google Drive no requiere operaciones adicionales.")
+    
     def login(self, credentials):
         self.gauth = GoogleAuth()
         self.gauth.LoadCredentialsFile(credentials.get('credentials_file'))

@@ -10,6 +10,11 @@ class StorageInterface(ABC):
         pass
 
     @abstractmethod
+    def disconnect(self, credentials):
+        """Realiza las operaciones necesarias para desconectar el servicio de almacenamiento."""
+        pass
+        
+    @abstractmethod
     def login(self, credentials):
         """Inicia sesión en el servicio de almacenamiento."""
         pass

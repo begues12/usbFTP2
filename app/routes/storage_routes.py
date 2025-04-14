@@ -112,6 +112,36 @@ def add_connection(storage_type):
         connection.save()
         return jsonify({'message': 'Conexión añadida con éxito'}), 200
         
+@storage_bp.route('/delete_connection/<int:connection_id>', methods=['POST'])
+def delete_connection(connection_id):
+    """
+    Elimina una conexión de cualquier tipo.
+    """
+    # Obtener la conexión de la base de datos
+    connection = Connection.query.get(connection_id)
+    if not connection:
+        return jsonify({'error': 'Conexión no encontrada'}), 404
+
+    # Determinar el tipo de conexión
+    connection_type = connection.type
+    storage_instance = storages.get(connection_type)
+
+    if not storage_instance:
+        return jsonify({'error': f'Tipo de conexión "{connection_type}" no soportado'}), 400
+
+    try:
+        # Llamar a una función abstracta para desmontar/desconectar
+        if hasattr(storage_instance, 'disconnect'):
+            storage_instance.disconnect(connection.credentials)
+
+        # Eliminar la conexión de la base de datos
+        db.session.delete(connection)
+        db.session.commit()
+
+        return jsonify({'message': 'Conexión eliminada con éxito'}), 200
+    except Exception as e:
+        return jsonify({'error': f'Error al eliminar la conexión: {str(e)}'}), 500
+        
 @storage_bp.route('/mount/<int:connection_id>', methods=['POST'])
 def mount_folder(connection_id):
     """

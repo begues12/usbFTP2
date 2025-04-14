@@ -15,6 +15,12 @@ class DropboxStorage(StorageInterface):
         self.dbx = dropbox.Dropbox(token)
         return "Conectado a Dropbox con éxito"
 
+    def disconnect(self, credentials):
+        """
+        Realiza las operaciones necesarias para desconectar DropboxStorage.
+        """
+        print("Desconexión de Dropbox no requiere operaciones adicionales.")
+    
     def login(self, credentials):
         token = credentials.get('token')
         if not token:

@@ -55,7 +55,17 @@ class FTPStorage:
             logging.error(f"Error inesperado al conectar al servidor FTP: {str(e)}")
             return False
 
-
+    def disconnect(self, credentials):
+        """
+        Realiza las operaciones necesarias para desconectar FTPStorage.
+        """
+        try:
+            if self.ftp:
+                self.ftp.quit()
+                print("Conexión FTP cerrada correctamente.")
+        except Exception as e:
+            print(f"Error al desconectar FTP: {str(e)}")
+        
     def list_files(self):
         """
         Lista los archivos y carpetas en el directorio actual del servidor FTP.
