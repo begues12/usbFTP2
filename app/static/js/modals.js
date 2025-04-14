@@ -35,7 +35,8 @@ function showModal(type, message) {
     // Crear el contenedor del modal
     const modal = document.createElement('div');
     modal.id = 'dynamicModal';
-    modal.className = `toast align-items-center text-white ${config.bgColor} border-0 position-fixed top-0 end-0 m-3`;    modal.style.zIndex = 1055;
+    modal.className = `toast align-items-center text-white ${config.bgColor} border-0 position-fixed top-0 end-0 m-3`;
+    modal.style.zIndex = 1055;
     modal.style.minWidth = '300px';
 
     // Contenido del modal
