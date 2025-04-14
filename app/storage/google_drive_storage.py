@@ -6,6 +6,17 @@ class GoogleDriveStorage(StorageInterface):
     def __init__(self):
         self.gauth = None
         self.drive = None
+        
+    def connect(self, credentials):
+        """
+        Conecta a Google Drive utilizando las credenciales proporcionadas.
+        """
+        self.gauth = GoogleAuth()
+        self.gauth.LoadCredentialsFile(credentials.get('credentials_file'))
+        if not self.gauth.credentials:
+            raise ValueError("No se pudieron cargar las credenciales")
+        self.drive = GoogleDrive(self.gauth)
+        return "Conectado a Google Drive con éxito"
 
     def login(self, credentials):
         self.gauth = GoogleAuth()
