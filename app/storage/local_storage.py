@@ -89,23 +89,23 @@ class LocalStorage:
         if not os.path.exists(full_path):
             os.makedirs(full_path)
             
-    def mount_to_gadget(self, mount_path, backing_file, lun_config_path):
+    def prepare_backing_file(self, backing_file):
         """
-        Monta la carpeta local como un dispositivo USB utilizando gadget mode.
+        Crea el backing file si no existe y lo formatea.
         """
-        # Paso 1: Verificar si ya está montado
-        if os.path.ismount(mount_path):
-            print(f"{mount_path} ya está montado. Procediendo a desmontarlo...")
-            subprocess.run(['sudo', 'umount', mount_path], check=True)
-
-        # Paso 2: Crear backing file si no existe
         if not os.path.exists(backing_file):
             print(f"Creando backing file {backing_file}...")
             subprocess.run(['sudo', 'dd', 'if=/dev/zero', f'of={backing_file}', 'bs=1M', 'count=64'], check=True)
             print(f"Formateando {backing_file} como FAT32...")
             subprocess.run(['sudo', 'mkfs.vfat', backing_file], check=True)
 
-        # Paso 3: Sincronizar contenido de la carpeta con el backing file
+    def sync_folder_to_backing_file(self, backing_file):
+        """
+        Sincroniza el contenido de la carpeta con el backing file.
+        """
+        if not self.base_path:
+            raise ValueError("Debe conectarse primero utilizando el método 'connect'.")
+
         temp_mount = "/mnt/temp_backing"
         os.makedirs(temp_mount, exist_ok=True)
         try:
@@ -118,7 +118,16 @@ class LocalStorage:
             subprocess.run(['sudo', 'umount', temp_mount], check=True)
             os.rmdir(temp_mount)
 
-        # Paso 4: Actualizar configuración del gadget USB
+    def mount_to_gadget(self, mount_path, backing_file, lun_config_path):
+        """
+        Monta la carpeta local como un dispositivo USB utilizando gadget mode.
+        """
+        # Paso 1: Verificar si ya está montado
+        if os.path.ismount(mount_path):
+            print(f"{mount_path} ya está montado. Procediendo a desmontarlo...")
+            subprocess.run(['sudo', 'umount', mount_path], check=True)
+
+        # Paso 2: Actualizar configuración del gadget USB
         print(f"Actualizando configuración del gadget USB en {lun_config_path}...")
         with open(lun_config_path, "w") as lun_file:
             lun_file.write(backing_file)

@@ -76,15 +76,43 @@ def delete_local_file(connection_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@local_bp.route('/<int:connection_id>/mount', methods=['POST'])
-def mount_local_folder(connection_id):
+@storage_bp.route('/mount/<int:connection_id>', methods=['POST'])
+def mount_folder(connection_id):
     """
-    Monta una carpeta local para que sea accesible a través del gadget.
+    Monta una carpeta para que sea accesible con el gadget mode.
     """
+    connection = Connection.query.get(connection_id)
+    if not connection:
+        return jsonify({'error': 'Conexión no encontrada'}), 404
+
+    connection_type = connection.type
+    storage_instance = storages.get(connection_type)
+
+    if not storage_instance:
+        return jsonify({'error': f'Tipo de conexión "{connection_type}" no soportado'}), 400
+
     try:
-        local_storage = get_local_storage(connection_id)
-        mount_path = f"/mnt/gadget/{connection_id}"
-        local_storage.mount_to_gadget(mount_path)
-        return jsonify({'message': f'Carpeta montada en {mount_path}'}), 200
+        mount_path = f"/mnt/gadget/{connection.name}"
+        backing_file = f"/home/usbFTP/backing_{connection.id}.img"
+        lun_config_path = f"/sys/kernel/config/usb_gadget/mygadget/functions/mass_storage.0/lun.0/file"
+
+        storage_instance.mount_to_gadget(mount_path, backing_file, lun_config_path)
+        return jsonify({'message': f'Carpeta montada en {mount_path} y expuesta como dispositivo USB.'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+        
+@local_bp.route('/prepare', methods=['POST'])
+def prepare_local_folders():
+    """
+    Prepara las carpetas locales y backing files para todas las conexiones locales.
+    """
+    connections = Connection.query.filter_by(type='local').all()
+    for connection in connections:
+        try:
+            local_storage = get_local_storage(connection.id)
+            backing_file = f"/home/usbFTP/backing_{connection.id}.img"
+            local_storage.prepare_backing_file(backing_file)
+            local_storage.sync_folder_to_backing_file(backing_file)
+        except Exception as e:
+            print(f"Error al preparar la conexión {connection.id}: {e}")
+    return jsonify({'message': 'Preparación completada'}), 200
