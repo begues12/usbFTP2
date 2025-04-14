@@ -25,16 +25,31 @@ def get_local_storage(connection_id):
 @local_bp.route('/<int:connection_id>/list', methods=['GET'])
 def list_local_files(connection_id):
     """
-    Lista los archivos y carpetas en el almacenamiento local.
+    Lista los archivos y carpetas en el almacenamiento local y renderiza la plantilla.
     """
     folder_path = request.args.get('folder_path', "")
     try:
+        # Obtener la instancia de LocalStorage
         local_storage = get_local_storage(connection_id)
         files = local_storage.list_files(folder_path)
-        return jsonify({'files': files}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
+        # Renderizar la plantilla con los archivos y carpetas
+        return render_template(
+            'files_explorer/local_explorer.html',
+            files=files,
+            connection_id=connection_id,
+            folder_path=folder_path
+        )
+    except Exception as e:
+        # Renderizar un mensaje de error en caso de fallo
+        return render_template(
+            'files_explorer/local_explorer.html',
+            files=[],
+            connection_id=connection_id,
+            folder_path=folder_path,
+            error=str(e)
+        )
+        
 @local_bp.route('/<int:connection_id>/download', methods=['GET'])
 def download_local_file(connection_id):
     """

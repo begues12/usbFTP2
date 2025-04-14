@@ -1,4 +1,4 @@
-<!-- filepath: c:\Users\afuentes\Documents\usbFTP2\app\templates\local_explorer.html -->
+<!-- filepath: c:\Users\alex\Desktop\usbFTP\app\templates\files_explorer\local_explorer.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -10,6 +10,15 @@
 <body>
     <div class="container mt-5">
         <h1 class="text-center">Explorador Local</h1>
+
+        <!-- Mostrar mensaje de error si existe -->
+        {% if error %}
+        <div class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <!-- Tabla de archivos y carpetas -->
         <table class="table table-striped mt-4">
             <thead>
                 <tr>
