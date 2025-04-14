@@ -69,8 +69,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 showToast('error', 'Error al realizar la operación de montaje/desmontaje.');
                             }
                         } catch (error) {
-                            console.error('Error al montar/desmontar la carpeta:', error);
-                            showToast('error', 'Error inesperado al realizar la operación.');
+                            showToast('error', 'Error inesperado al realizar la operación de montaje/desmontaje.');
                         }
                     });
                 });
@@ -98,14 +97,13 @@ document.addEventListener('DOMContentLoaded', function () {
                                     }
                                 });
                                 if (deleteResponse.ok) {
-                                    showToast('success', 'Conexión borrada con éxito.');
+                                    showModal('success', 'Conexión borrada con éxito.');
                                     fetchConnections(); // Actualizar la lista de conexiones
                                 } else {
-                                    showToast('error', 'Error al borrar la conexión.');
+                                    showModal('error', 'Error al borrar la conexión.');
                                 }
                             } catch (error) {
-                                console.error('Error al borrar la conexión:', error);
-                                showToast('error', 'Error inesperado al borrar la conexión.');
+                                showModal('error', 'Error inesperado al borrar la conexión.');
                             }
                         }
                     });

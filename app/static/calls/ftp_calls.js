@@ -33,16 +33,13 @@ document.getElementById('ftpForm').addEventListener('submit', async function (e)
         const data = await response.json();
 
         if (response.ok) {
-            const successToast = document.getElementById('successConnToast');
-            const toast = new bootstrap.Toast(successToast);
-            toast.show();
-
+            showModal('success', 'Conexión FTP añadida con éxito.');
             document.getElementById('ftpForm').reset();
         } else {
-            alert(`Error: ${data.error}`);
+            showModal('error', `Error al añadir la conexión FTP: ${data.error}`);
         }
     } catch (error) {
-        alert(`Error al añadir la conexión FTP: ${error.message}`);
+        showModal('error', 'Error inesperado al añadir la conexión FTP.');
     } finally {
         const submitButton = document.querySelector('#ftpForm button[type="submit"]');
         submitButton.disabled = false;
