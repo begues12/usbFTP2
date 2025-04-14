@@ -1,33 +1,46 @@
 body {
     background-color: #f8f9fa;
 }
+
 .header {
     background-color: #343a40;
     color: white;
     padding: 20px 0;
 }
+
 .header h1 {
     font-size: 2.5rem;
 }
+
 .connections-list {
     background: white;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     padding: 20px;
 }
+
 .list-group-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
+
 .list-group-item i {
     margin-right: 10px;
 }
+
 .btn-primary {
     background-color: #007bff;
     border-color: #007bff;
 }
+
 .btn-primary:hover {
     background-color: #0056b3;
     border-color: #004085;
+}
+
+.tooltip-inner {
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
 }
