@@ -19,6 +19,10 @@ class Connection(BaseModel):
         """Encripta y guarda la contraseña."""
         self.password_hash = generate_password_hash(password)
 
+    def has_password(self):
+        """Verifica si la conexión tiene una contraseña establecida."""
+        return self.password_hash is not None and self.password_hash != ''
+    
     def check_password(self, password):
         """Verifica si la contraseña proporcionada es correcta."""
         return check_password_hash(self.password_hash, password)

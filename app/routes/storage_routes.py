@@ -9,7 +9,10 @@ from app.storage.google_drive_storage import GoogleDriveStorage
 from app.storage.local_storage import LocalStorage
 from app.routes.local_routes import local_bp
 from app.extensions import socketio, db  # Importar socketio y db desde extensions.py
+from werkzeug.security import generate_password_hash
+from werkzeug.security import check_password_hash
 import os
+
 
 storages = {
     'ftp'           : FTPStorage(),
@@ -58,11 +61,15 @@ def list_connections():
             else:
                 status = 'unsupported'
 
+            # Determinar si la conexión tiene una contraseña configurada
+            has_password = 'password' in connection.credentials and bool(connection.credentials['password'])
+
             result.append({
                 'id': connection.id,
                 'name': connection.name,
                 'type': connection.type,
-                'status': status  # Estado de la conexión
+                'status': status,  # Estado de la conexión
+                'has_password': has_password  # Indica si tiene contraseña
             })
 
         return jsonify(result)
@@ -163,25 +170,6 @@ def mount_folder(connection_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
-@socketio.on('access_folder')
-def handle_access_folder(data):
-    """
-    Maneja el evento de intento de acceso a una carpeta protegida.
-    """
-    connection_id = data.get('connection_id')
-    connection = Connection.query.get(connection_id)
-
-    if not connection:
-        emit('access_denied', {'message': 'Conexión no encontrada'})
-        return
-
-    # Verificar si la carpeta está protegida con contraseña
-    if 'password' in connection.credentials:
-        emit('password_required', {'message': f'La carpeta "{connection.name}" está protegida con contraseña.'})
-    else:
-        emit('access_granted', {'message': f'Acceso concedido a la carpeta "{connection.name}".'})
-
-
 @socketio.on('submit_password')
 def handle_submit_password(data):
     """
@@ -197,7 +185,52 @@ def handle_submit_password(data):
         return
 
     # Validar la contraseña
-    if connection.credentials.get('password') == password:
+    stored_password_hash = connection.credentials.get('password')
+    if stored_password_hash and check_password_hash(stored_password_hash, password):
         emit('access_granted', {'message': f'Acceso concedido a la carpeta "{connection.name}".'})
     else:
         emit('access_denied', {'message': 'Contraseña incorrecta. Acceso denegado.'})
+        
+@socketio.on('submit_password')
+def handle_submit_password(data):
+    """
+    Maneja el envío de la contraseña por parte del cliente.
+    """
+    connection_id = data.get('connection_id')
+    password = data.get('password')
+
+    connection = Connection.query.get(connection_id)
+
+    if not connection:
+        emit('access_denied', {'message': 'Conexión no encontrada'})
+        return
+
+    # Validar la contraseña usando el método check_password del modelo
+    if connection.check_password(password):
+        emit('access_granted', {'message': f'Acceso concedido a la carpeta "{connection.name}".'})
+    else:
+        emit('access_denied', {'message': 'Contraseña incorrecta. Acceso denegado.'})
+           
+@storage_bp.route('/set_password/<int:connection_id>', methods=['POST'])
+def set_password(connection_id):
+    """
+    Configura o actualiza la contraseña de una conexión, almacenándola como un hash.
+    """
+    data = request.get_json()
+    password = data.get('password')
+
+    if not password:
+        return jsonify({'error': 'La contraseña es obligatoria.'}), 400
+
+    connection = Connection.query.get(connection_id)
+
+    if not connection:
+        return jsonify({'error': 'Conexión no encontrada.'}), 404
+
+    try:
+        # Usar el método set_password del modelo para guardar la contraseña como hash
+        connection.set_password(password)
+        connection.save()
+        return jsonify({'message': 'Contraseña configurada con éxito.'}), 200
+    except Exception as e:
+        return jsonify({'error': f'Error al configurar la contraseña: {str(e)}'}), 500

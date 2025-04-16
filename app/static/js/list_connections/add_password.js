@@ -31,12 +31,13 @@ $(document).ready(function () {
         }
 
         try {
+            // Enviar la solicitud al servidor para configurar la contraseña
             const response = await fetch(`/storage/set_password/${currentConnectionId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ password: newPassword })
+                body: JSON.stringify({ password: newPassword }) // Enviar la contraseña como JSON
             });
 
             if (response.ok) {

@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const row = document.createElement('tr');
                     row.classList.add('clickable-row');
                     row.setAttribute('data-url', `/storage/${connection.type}/${connection.id}/list`);
-
+                
                     row.innerHTML = `
                         <td>
                             <span 
@@ -48,6 +48,8 @@ document.addEventListener('DOMContentLoaded', function () {
                                 </div>">
                             </span>
                             ${connection.name}
+                            ${connection.credentials && connection.credentials.password ? 
+                                '<i class="bi bi-lock-fill text-secondary ms-2" title="Protegido con contraseña"></i>' : ''}
                         </td>
                         <td>${connection.type.charAt(0).toUpperCase() + connection.type.slice(1)}</td>
                         <td class="text-right justify-content-end">
@@ -58,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton${connection.id}">
                                     <li><a class="dropdown-item mount-folder" href="#" data-id="${connection.id}">${connection.status === 'mount' ? 'Desmontar' : 'Montar'}</a></li>
                                     <li><a class="dropdown-item edit-connection" href="#" data-id="${connection.id}">Editar</a></li>
-                                    <li><a class="dropdown-item set-password" href="#" data-id="{{ connection.id }}">Configurar Contraseña</a></li>
+                                    <li><a class="dropdown-item set-password" href="#" data-id="${connection.id}">Configurar Contraseña</a></li>
                                     <li><a class="dropdown-item delete-connection" href="#" data-id="${connection.id}" data-type="${connection.type}">Borrar</a></li>
                                 </ul>
                             </div>
