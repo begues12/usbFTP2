@@ -8,7 +8,7 @@ from app.storage.dropbox_storage import DropboxStorage
 from app.storage.google_drive_storage import GoogleDriveStorage
 from app.storage.local_storage import LocalStorage
 from app.routes.local_routes import local_bp
-from app import db
+from app.extensions import socketio, db  # Importar socketio y db desde extensions.py
 import os
 
 storages = {
@@ -162,3 +162,42 @@ def mount_folder(connection_id):
         return jsonify({'message': f'Carpeta montada en {mount_path} y expuesta como dispositivo USB.'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+@socketio.on('access_folder')
+def handle_access_folder(data):
+    """
+    Maneja el evento de intento de acceso a una carpeta protegida.
+    """
+    connection_id = data.get('connection_id')
+    connection = Connection.query.get(connection_id)
+
+    if not connection:
+        emit('access_denied', {'message': 'Conexión no encontrada'})
+        return
+
+    # Verificar si la carpeta está protegida con contraseña
+    if 'password' in connection.credentials:
+        emit('password_required', {'message': f'La carpeta "{connection.name}" está protegida con contraseña.'})
+    else:
+        emit('access_granted', {'message': f'Acceso concedido a la carpeta "{connection.name}".'})
+
+
+@socketio.on('submit_password')
+def handle_submit_password(data):
+    """
+    Maneja el envío de la contraseña por parte del cliente.
+    """
+    connection_id = data.get('connection_id')
+    password = data.get('password')
+
+    connection = Connection.query.get(connection_id)
+
+    if not connection:
+        emit('access_denied', {'message': 'Conexión no encontrada'})
+        return
+
+    # Validar la contraseña
+    if connection.credentials.get('password') == password:
+        emit('access_granted', {'message': f'Acceso concedido a la carpeta "{connection.name}".'})
+    else:
+        emit('access_denied', {'message': 'Contraseña incorrecta. Acceso denegado.'})

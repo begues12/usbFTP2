@@ -39,6 +39,18 @@
 </style>
 
 <div class="container mt-5">
+
+    <div class="d-flex justify-content-end align-items-center mb-3">
+
+        <button class="btn btn-success m-3" data-toggle="modal" data-target="#addConnectionModal">
+            <i class="bi bi-plus-circle"></i> Añadir Conexión
+        </button>
+
+        <button class="btn btn-primary m-3" id="refreshConnectionsButton">
+            <i class="bi bi-arrow-clockwise"></i>
+        </button>
+    </div>
+
     <table id="connectionsTable" class="table table-striped mt-4 table-hover">
         <thead>
             <tr>
@@ -52,6 +64,8 @@
         </tbody>
     </table>
 </div>
+
+<!-- Modal para añadir conexión incluide -->
 
 
 <script src="{{ url_for('static', filename='js/modals.js') }}"></script>

@@ -39,19 +39,14 @@
     </div>
 
     <div class="container mt-5">
-        <div class="d-flex justify-content-end align-items-center mb-4">
-            <button class="btn btn-primary" data-toggle="modal" data-target="#addConnectionModal">
-                <i class="bi bi-plus-circle"></i> Añadir Conexión
-            </button>
-        </div>
         {% include 'list_connections.html' %}
     </div>
 
-
   
     <!-- Incluir el modal -->
+    {% include 'modals/access_folder_modal.html' %}
     {% include 'modals/add_connection_modal.html' %}
-
-    
+    {% include 'modals/edit_connection_modal.html' %}
+    {% include 'modals/add_password_modal.html' %}
 
 </html>

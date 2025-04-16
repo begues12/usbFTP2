@@ -1,14 +1,16 @@
 import argparse
 from app import create_app
+from app.extensions import socketio 
+from flask_migrate import Migrate
+from app.extensions import db
 
-# Crear la instancia de la aplicación
 app = create_app()
 
+migrate = Migrate(app, db)
+
 if __name__ == '__main__':
-    # Configurar argparse para manejar argumentos de línea de comandos
     parser = argparse.ArgumentParser(description="Ejecutar la aplicación Flask")
     parser.add_argument('--port', type=int, default=5050, help='Puerto en el que se ejecutará la aplicación (por defecto: 5060)')
     args = parser.parse_args()
 
-    # Ejecutar la aplicación Flask en el puerto especificado
-    app.run(debug=True, host='0.0.0.0', port=args.port)
+    socketio.run(app, debug=True, port=args.port)

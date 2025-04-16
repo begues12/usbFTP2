@@ -1,7 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-
-# Instancia de SQLAlchemy
-db = SQLAlchemy()
+from app.extensions import db
 
 # Modelo base para heredar
 class BaseModel(db.Model):

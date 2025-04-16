@@ -29,6 +29,11 @@
                     {% include 'add_connection_form/local_form.html' %}
                 </div>
             </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="saveConnectionButton">Guardar Conexión</button>
+            </div>
         </div>
     </div>
 </div>
@@ -48,26 +53,26 @@
     });
 
     document.getElementById('saveConnectionButton').addEventListener('click', async function () {
-            const form = document.getElementById('addConnectionForm');
-            const formData = new FormData(form);
-            const type = formData.get('type');
-
-            try {
-                const response = await fetch(`/storage/add_connection/${type}`, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (response.ok) {
-                    alert('Conexión añadida con éxito');
-                    location.reload(); // Recargar la página para actualizar la lista de conexiones
-                } else {
-                    const error = await response.json();
-                    alert(`Error: ${error.error}`);
-                }
-            } catch (error) {
-                console.error('Error al añadir la conexión:', error);
+        const form = document.getElementById('addConnectionForm');
+        const formData = new FormData(form);
+        const type = formData.get('type');
+    
+        try {
+            const response = await fetch(`/storage/add_connection/${type}`, {
+                method: 'POST',
+                body: formData
+            });
+    
+            if (response.ok) {
+                alert('Conexión añadida con éxito');
+                location.reload(); // Recargar la página para actualizar la lista de conexiones
+            } else {
+                const error = await response.json();
+                alert(`Error: ${error.error}`);
             }
-        });
+        } catch (error) {
+            console.error('Error al añadir la conexión:', error);
+        }
+    });
 
 </script>

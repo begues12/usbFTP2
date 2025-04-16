@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', function () {
+    const refreshButton = document.getElementById('refreshConnectionsButton'); // Botón de "Actualizar"
     let previousStates = {};
 
+    // Función para obtener y actualizar las conexiones
     async function fetchConnections() {
         try {
             const response = await fetch('/storage/connections', {
@@ -56,6 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton${connection.id}">
                                     <li><a class="dropdown-item mount-folder" href="#" data-id="${connection.id}">${connection.status === 'mount' ? 'Desmontar' : 'Montar'}</a></li>
                                     <li><a class="dropdown-item edit-connection" href="#" data-id="${connection.id}">Editar</a></li>
+                                    <li><a class="dropdown-item set-password" href="#" data-id="${connection.id}">Configurar Contraseña</a></li>
                                     <li><a class="dropdown-item delete-connection" href="#" data-id="${connection.id}" data-type="${connection.type}">Borrar</a></li>
                                 </ul>
                             </div>
@@ -75,13 +78,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Manejar clics en filas, excepto en el menú desplegable
                 document.querySelectorAll('.clickable-row').forEach(row => {
                     row.addEventListener('click', function (event) {
-                        // Evitar que el clic en el menú desplegable active la redirección
                         if (event.target.closest('.dropdown')) {
                             return;
                         }
                         const url = this.getAttribute('data-url');
                         if (url) {
-                            window.location.href = url; // Redirigir a la URL
+                            window.location.href = url;
                         }
                     });
                 });
@@ -99,13 +101,13 @@ document.addEventListener('DOMContentLoaded', function () {
                                 }
                             });
                             if (mountResponse.ok) {
-                                showModal('success', 'Operación de montaje/desmontaje realizada con éxito.');
+                                alert('Operación de montaje/desmontaje realizada con éxito.');
                                 fetchConnections(); // Actualizar la lista de conexiones
                             } else {
-                                showModal('error', 'Error al realizar la operación de montaje/desmontaje.');
+                                alert('Error al realizar la operación de montaje/desmontaje.');
                             }
                         } catch (error) {
-                            showModal('error', 'Error inesperado al realizar la operación de montaje/desmontaje.');
+                            alert('Error inesperado al realizar la operación de montaje/desmontaje.');
                         }
                     });
                 });
@@ -115,48 +117,39 @@ document.addEventListener('DOMContentLoaded', function () {
                         event.preventDefault();
                         const connectionId = this.getAttribute('data-id');
                         alert(`Editar conexión con ID: ${connectionId}`);
-                        // Aquí puedes implementar la lógica para editar la conexión
                     });
                 });
 
                 document.querySelectorAll('.delete-connection').forEach(item => {
                     item.addEventListener('click', function (event) {
                         event.preventDefault();
-                        const connectionId = this.getAttribute('data-id'); // Obtener el ID de la conexión
-                
-                        // Mostrar el modal de confirmación
-                        showConfirmModal(
-                            'Confirmar eliminación',
-                            '¿Estás seguro de que deseas borrar esta conexión?',
-                            async () => {
-                                try {
-                                    // Realizar la solicitud para eliminar la conexión
-                                    const deleteResponse = await fetch(`/storage/delete_connection/${connectionId}`, {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json'
-                                        }
-                                    });
-                
-                                    if (deleteResponse.ok) {
-                                        showModal('success', 'Conexión borrada con éxito.');
-                                        fetchConnections(); // Actualizar la lista de conexiones
-                                    } else {
-                                        const errorData = await deleteResponse.json();
-                                        showModal('error', errorData.error || 'Error al borrar la conexión.');
-                                    }
-                                } catch (error) {
-                                    showModal('error', 'Error inesperado al borrar la conexión.');
+                        const connectionId = this.getAttribute('data-id');
+                        if (confirm('¿Estás seguro de que deseas borrar esta conexión?')) {
+                            fetch(`/storage/delete_connection/${connectionId}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
                                 }
-                            }
-                        );
+                            })
+                                .then(response => {
+                                    if (response.ok) {
+                                        alert('Conexión borrada con éxito.');
+                                        fetchConnections();
+                                    } else {
+                                        alert('Error al borrar la conexión.');
+                                    }
+                                })
+                                .catch(error => {
+                                    alert('Error inesperado al borrar la conexión.');
+                                });
+                        }
                     });
                 });
 
                 // Verificar cambios de estado
                 connections.forEach(connection => {
                     if (previousStates[connection.id] && previousStates[connection.id] !== connection.status) {
-                        showModal('success', `La conexión "${connection.name}" cambió de estado: ${connection.status}`);
+                        alert(`La conexión "${connection.name}" cambió de estado: ${connection.status}`);
                     }
                     previousStates[connection.id] = connection.status;
                 });
@@ -165,12 +158,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         } catch (error) {
             console.error('Error al realizar la solicitud:', error);
-        } finally {
-            // Esperar 5 segundos antes de realizar la siguiente llamada
-            setTimeout(fetchConnections, 5000);
         }
     }
 
-    // Llamar a fetchConnections al cargar la página
-    fetchConnections();
+    // Vincular la función fetchConnections al botón de "Actualizar"
+    refreshButton.addEventListener('click', fetchConnections);
+    fetchConnections(); // Llamar a la función al cargar la página
 });
