@@ -31,9 +31,17 @@ def list_local_files(connection_id):
     token = request.headers.get('Authorization')  # Leer el token del encabezado
 
     try:
-        # Validar el token
-        if not Token.validate_token(token):
-            return jsonify({'error': 'Token inválido o expirado.'}), 403
+        # Validar el token si está presente
+        if token:
+            if not Token.validate_token(token):
+                return jsonify({'error': 'Token inválido o expirado.'}), 403
+        else:
+            # Si no hay token, verificar si la conexión requiere contraseña
+            connection = Connection.query.get(connection_id)
+            if not connection:
+                return jsonify({'error': 'Conexión no encontrada.'}), 404
+            if connection.has_password:
+                return jsonify({'requires_password': True}), 403
 
         # Obtener la instancia de LocalStorage
         local_storage = get_local_storage(connection_id)
@@ -48,7 +56,8 @@ def list_local_files(connection_id):
         )
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-                        
+    
+                            
 @local_bp.route('/<int:connection_id>/download', methods=['GET'])
 def download_local_file(connection_id):
     """

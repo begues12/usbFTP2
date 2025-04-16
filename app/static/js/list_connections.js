@@ -88,21 +88,32 @@ document.addEventListener('DOMContentLoaded', function () {
                         try {
                             // Obtener el token del almacenamiento local
                             const token = localStorage.getItem(`token_${connectionId}`);
-                            if (!token) {
-                                showModal('error', 'No se encontró un token válido. Por favor, ingrese la contraseña.');
-                                return;
+                            const headers = {
+                                'Content-Type': 'application/json'
+                            };
+                            if (token) {
+                                headers['Authorization'] = token; // Enviar el token en el encabezado si está presente
                             }
                 
                             const response = await fetch(url, {
                                 method: 'GET',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': token // Enviar el token en el encabezado
-                                }
+                                headers: headers
                             });
                 
                             if (response.status === 403) {
-                                showModal('error', 'Token inválido o expirado. Por favor, ingrese la contraseña nuevamente.');
+                                const data = await response.json();
+                                if (data.requires_password) {
+                                    // Mostrar el modal para ingresar la contraseña
+                                    const passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
+                                    document.getElementById('submitPasswordButton').setAttribute('data-connection-id', connectionId);
+                                    passwordModal.show();
+                                } else {
+                                    // Token inválido o expirado, abrir el modal para pedir la contraseña
+                                    showModal('error', 'Token inválido o expirado. Por favor, ingrese la contraseña nuevamente.');
+                                    const passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
+                                    document.getElementById('submitPasswordButton').setAttribute('data-connection-id', connectionId);
+                                    passwordModal.show();
+                                }
                             } else if (response.ok) {
                                 // Redirigir a la URL si el token es válido
                                 window.location.href = url;
