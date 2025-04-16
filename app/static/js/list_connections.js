@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton${connection.id}">
                                     <li><a class="dropdown-item mount-folder" href="#" data-id="${connection.id}">${connection.status === 'mount' ? 'Desmontar' : 'Montar'}</a></li>
                                     <li><a class="dropdown-item edit-connection" href="#" data-id="${connection.id}">Editar</a></li>
-                                    <li><a class="dropdown-item set-password" href="#" data-id="${connection.id}">Configurar Contraseña</a></li>
+                                    <li><a class="dropdown-item set-password" href="#" data-id="{{ connection.id }}">Configurar Contraseña</a></li>
                                     <li><a class="dropdown-item delete-connection" href="#" data-id="${connection.id}" data-type="${connection.type}">Borrar</a></li>
                                 </ul>
                             </div>
