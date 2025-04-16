@@ -77,17 +77,72 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 });
 
-                // Manejar clics en filas, excepto en el menú desplegable
                 document.querySelectorAll('.clickable-row').forEach(row => {
-                    row.addEventListener('click', function (event) {
+                    row.addEventListener('click', async function (event) {
                         if (event.target.closest('.dropdown')) {
                             return;
                         }
                         const url = this.getAttribute('data-url');
-                        if (url) {
-                            window.location.href = url;
+                        const connectionId = this.getAttribute('data-url').split('/')[3]; // Extraer el ID de la conexión
+                
+                        try {
+                            // Obtener el token del almacenamiento local
+                            const token = localStorage.getItem(`token_${connectionId}`);
+                            if (!token) {
+                                showModal('error', 'No se encontró un token válido. Por favor, ingrese la contraseña.');
+                                return;
+                            }
+                
+                            const response = await fetch(url, {
+                                method: 'GET',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': token // Enviar el token en el encabezado
+                                }
+                            });
+                
+                            if (response.status === 403) {
+                                showModal('error', 'Token inválido o expirado. Por favor, ingrese la contraseña nuevamente.');
+                            } else if (response.ok) {
+                                // Redirigir a la URL si el token es válido
+                                window.location.href = url;
+                            } else {
+                                showModal('error', 'Error al abrir la conexión.');
+                            }
+                        } catch (error) {
+                            console.error('Error al realizar la solicitud:', error);
+                            showModal('error', 'Error inesperado al abrir la conexión.');
                         }
                     });
+                });
+                
+                // Manejar el envío de la contraseña desde el modal
+                document.getElementById('submitPasswordButton').addEventListener('click', async function () {
+                    const connectionId = this.getAttribute('data-connection-id');
+                    const password = document.getElementById('passwordInput').value;
+                
+                    try {
+                        const response = await fetch(`/storage/submit_password`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ connection_id: connectionId, password: password })
+                        });
+                
+                        const data = await response.json();
+                        if (response.ok) {
+                            // Guardar el token en el almacenamiento local
+                            localStorage.setItem(`token_${connectionId}`, data.token);
+                            showModal('success', data.message);
+                            location.reload(); // Recargar la página para mostrar el contenido
+                        } else {
+                            showModal('error', data.error || 'Contraseña incorrecta.');
+                        }
+                    } catch (error) {
+                        console.error('Error al enviar la contraseña:', error);
+                        showModal('error', 'Error inesperado al enviar la contraseña.');
+                    }
                 });
 
                 // Manejar las acciones del menú desplegable
@@ -103,13 +158,13 @@ document.addEventListener('DOMContentLoaded', function () {
                                 }
                             });
                             if (mountResponse.ok) {
-                                alert('Operación de montaje/desmontaje realizada con éxito.');
+                                showModal('success', 'Operación de montaje/desmontaje realizada con éxito.');
                                 fetchConnections(); // Actualizar la lista de conexiones
                             } else {
-                                alert('Error al realizar la operación de montaje/desmontaje.');
+                                showModal('error', 'Error al realizar la operación de montaje/desmontaje.');
                             }
                         } catch (error) {
-                            alert('Error inesperado al realizar la operación de montaje/desmontaje.');
+                            showModal('error', 'Error inesperado al realizar la operación de montaje/desmontaje.');
                         }
                     });
                 });
@@ -118,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     item.addEventListener('click', function (event) {
                         event.preventDefault();
                         const connectionId = this.getAttribute('data-id');
-                        alert(`Editar conexión con ID: ${connectionId}`);
+                        showModal('info', `Editar conexión con ID: ${connectionId}`);
                     });
                 });
 
@@ -135,14 +190,14 @@ document.addEventListener('DOMContentLoaded', function () {
                             })
                                 .then(response => {
                                     if (response.ok) {
-                                        alert('Conexión borrada con éxito.');
+                                        showModal('success', 'Conexión borrada con éxito.');
                                         fetchConnections();
                                     } else {
-                                        alert('Error al borrar la conexión.');
+                                        showModal('error', 'Error al borrar la conexión.');
                                     }
                                 })
                                 .catch(error => {
-                                    alert('Error inesperado al borrar la conexión.');
+                                    showModal('error', 'Error inesperado al borrar la conexión.');
                                 });
                         }
                     });
@@ -151,15 +206,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Verificar cambios de estado
                 connections.forEach(connection => {
                     if (previousStates[connection.id] && previousStates[connection.id] !== connection.status) {
-                        alert(`La conexión "${connection.name}" cambió de estado: ${connection.status}`);
+                        showModal('info', `La conexión "${connection.name}" cambió de estado: ${connection.status}`);
                     }
                     previousStates[connection.id] = connection.status;
                 });
             } else {
                 console.error('Error al obtener las conexiones:', response.statusText);
+                showModal('error', 'Error al obtener las conexiones.');
             }
         } catch (error) {
             console.error('Error al realizar la solicitud:', error);
+            showModal('error', 'Error inesperado al obtener las conexiones.');
         }
     }
 

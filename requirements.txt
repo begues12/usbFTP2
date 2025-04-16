@@ -1,2 +1,6 @@
 flask
 flask-socketio
+flask_sqlalchemy
+flask_migrate
+dropbox
+pydrive

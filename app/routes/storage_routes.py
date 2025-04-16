@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, render_template
 from app.models.connection_model import Connection
+from app.models.token_model import Token
 from app.routes.ftp_routes import ftp_bp
 from app.routes.dropbox_routes import dropbox_bp
 from app.routes.google_drive_routes import google_drive_bp
@@ -61,15 +62,15 @@ def list_connections():
             else:
                 status = 'unsupported'
 
-            # Determinar si la conexión tiene una contraseña configurada
-            has_password = 'password' in connection.credentials and bool(connection.credentials['password'])
 
+            
+            
             result.append({
                 'id': connection.id,
                 'name': connection.name,
                 'type': connection.type,
                 'status': status,  # Estado de la conexión
-                'has_password': has_password  # Indica si tiene contraseña
+                'has_password': bool(connection.has_password),  # Verificar si tiene contraseña
             })
 
         return jsonify(result)
@@ -170,27 +171,26 @@ def mount_folder(connection_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
-@socketio.on('submit_password')
-def handle_submit_password(data):
+@storage_bp.route('/submit_password', methods=['POST'])
+def submit_password():
     """
-    Maneja el envío de la contraseña por parte del cliente.
+    Valida la contraseña enviada por el cliente y genera un token temporal.
     """
+    data = request.get_json()
     connection_id = data.get('connection_id')
     password = data.get('password')
 
     connection = Connection.query.get(connection_id)
-
     if not connection:
-        emit('access_denied', {'message': 'Conexión no encontrada'})
-        return
+        return jsonify({'error': 'Conexión no encontrada'}), 404
 
-    # Validar la contraseña
-    stored_password_hash = connection.credentials.get('password')
-    if stored_password_hash and check_password_hash(stored_password_hash, password):
-        emit('access_granted', {'message': f'Acceso concedido a la carpeta "{connection.name}".'})
+    if connection.check_password(password):
+        # Generar un token temporal
+        token = Token.generate_token(connection_id)
+        return jsonify({'message': 'Contraseña correcta. Acceso concedido.', 'token': token}), 200
     else:
-        emit('access_denied', {'message': 'Contraseña incorrecta. Acceso denegado.'})
-        
+        return jsonify({'error': 'Contraseña incorrecta.'}), 403
+                    
 @socketio.on('submit_password')
 def handle_submit_password(data):
     """

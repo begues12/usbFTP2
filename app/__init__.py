@@ -4,6 +4,7 @@ from app.routes.storage_routes import storage_bp
 from app.routes.home_routes import home_bp
 from app.routes.wifi_routes import wifi_bp
 from app.routes.settings_routes import settings_bp
+from flask_migrate import Migrate
 
 def create_app():
     app = Flask(__name__)
@@ -14,6 +15,7 @@ def create_app():
 
     # Inicializar SQLAlchemy
     db.init_app(app)
+    Migrate(app, db)
 
     # Inicializar SocketIO
     socketio.init_app(app)

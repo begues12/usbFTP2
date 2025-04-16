@@ -23,17 +23,13 @@
 
                 <!-- Formularios dinámicos -->
                 <div id="connectionForms">
-                    {% include 'add_connection_form/ftp_form.html' %}
-                    {% include 'add_connection_form/dropbox_form.html' %}
-                    {% include 'add_connection_form/google_drive_form.html' %}
-                    {% include 'add_connection_form/local_form.html' %}
+                    {% include 'modals/list_connections/add_connection_form/dropbox_form.html' %}
+                    {% include 'modals/list_connections/add_connection_form/dropbox_form.html' %}
+                    {% include 'modals/list_connections/add_connection_form/google_drive_form.html' %}
+                    {% include 'modals/list_connections/add_connection_form/local_form.html' %}
                 </div>
             </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="saveConnectionButton">Guardar Conexión</button>
-            </div>
         </div>
     </div>
 </div>
