@@ -73,28 +73,30 @@ document.addEventListener('DOMContentLoaded', function () {
                 const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
                 tooltipTriggerList.forEach(function (tooltipTriggerEl) {
                     new bootstrap.Tooltip(tooltipTriggerEl, {
-                        html: true // Permitir HTML en los tooltips
+                        html: true
                     });
                 });
 
                 document.querySelectorAll('.clickable-row').forEach(row => {
                     row.addEventListener('click', async function (event) {
                         if (event.target.closest('.dropdown')) {
-                            return;
+                            return; // Evitar que el clic en el menú desplegable dispare la acción
                         }
+                
                         const url = this.getAttribute('data-url');
                         const connectionId = this.getAttribute('data-url').split('/')[3]; // Extraer el ID de la conexión
                 
                         try {
-                            // Obtener el token del almacenamiento local
                             const token = localStorage.getItem(`token_${connectionId}`);
                             const headers = {
                                 'Content-Type': 'application/json'
                             };
+                
                             if (token) {
-                                headers['Authorization'] = token; // Enviar el token en el encabezado si está presente
+                                headers['Authorization'] = `Bearer ${token}`;
                             }
                 
+                            // Realizar la solicitud con los encabezados configurados
                             const response = await fetch(url, {
                                 method: 'GET',
                                 headers: headers
@@ -108,26 +110,24 @@ document.addEventListener('DOMContentLoaded', function () {
                                     document.getElementById('submitPasswordButton').setAttribute('data-connection-id', connectionId);
                                     passwordModal.show();
                                 } else {
-                                    // Token inválido o expirado, abrir el modal para pedir la contraseña
-                                    showModal('error', 'Token inválido o expirado. Por favor, ingrese la contraseña nuevamente.');
-                                    const passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
-                                    document.getElementById('submitPasswordButton').setAttribute('data-connection-id', connectionId);
-                                    passwordModal.show();
+                                    alert('Token inválido o expirado. Por favor, ingrese la contraseña nuevamente.');
                                 }
                             } else if (response.ok) {
-                                // Redirigir a la URL si el token es válido
-                                window.location.href = url;
+                                const data = await response.json();
+                
+                                // Construir la URL en función del tipo de conexión
+                                const redirectUrl = `/${data.type}/${connectionId}/list?folder_path=${encodeURIComponent(data.folder_path)}`;
+                                window.location.href = redirectUrl;
                             } else {
-                                showModal('error', 'Error al abrir la conexión.');
+                                alert('Error al abrir la conexión.');
                             }
                         } catch (error) {
                             console.error('Error al realizar la solicitud:', error);
-                            showModal('error', 'Error inesperado al abrir la conexión.');
+                            alert('Error inesperado al abrir la conexión.');
                         }
                     });
                 });
                 
-                // Manejar el envío de la contraseña desde el modal
                 document.getElementById('submitPasswordButton').addEventListener('click', async function () {
                     const connectionId = this.getAttribute('data-connection-id');
                     const password = document.getElementById('passwordInput').value;
@@ -145,8 +145,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (response.ok) {
                             // Guardar el token en el almacenamiento local
                             localStorage.setItem(`token_${connectionId}`, data.token);
-                            showModal('success', data.message);
-                            location.reload(); // Recargar la página para mostrar el contenido
+                
+                            // Mostrar un mensaje de éxito
+                            showModal('success', 'Contraseña correcta. Token almacenado.');
+                
+                            // Opcional: Llamar a otra función para acceder a la carpeta
+                            accessFolder(connectionId);
                         } else {
                             showModal('error', data.error || 'Contraseña incorrecta.');
                         }
@@ -155,6 +159,47 @@ document.addEventListener('DOMContentLoaded', function () {
                         showModal('error', 'Error inesperado al enviar la contraseña.');
                     }
                 });
+                
+                async function accessFolder(connectionId) {
+                    const token = localStorage.getItem(`token_${connectionId}`);
+                    if (!token) {
+                        alert('No se encontró un token válido. Por favor, configure la contraseña nuevamente.');
+                        return;
+                    }
+                
+                    try {
+                        const response = await fetch(`/storage/access_folder/${connectionId}`, {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                
+                        if (response.ok) {
+                            const data = await response.json();
+                            console.log('Acceso a la carpeta:', data);
+                
+                            // Opcional: Mostrar los datos en la consola o en la interfaz
+                            // Por ejemplo, puedes renderizar los archivos en un contenedor
+                            renderFiles(data);
+                        } else {
+                            alert('Error al acceder a la carpeta.');
+                        }
+                    } catch (error) {
+                        console.error('Error al acceder a la carpeta:', error);
+                    }
+                }
+                
+                function renderFiles(data) {
+                    const filesContainer = document.getElementById('filesContainer');
+                    filesContainer.innerHTML = ''; // Limpiar contenido previo
+                
+                    data.files.forEach(file => {
+                        const fileElement = document.createElement('div');
+                        fileElement.textContent = file.name; // Mostrar el nombre del archivo
+                        filesContainer.appendChild(fileElement);
+                    });
+                }
 
                 // Manejar las acciones del menú desplegable
                 document.querySelectorAll('.mount-folder').forEach(item => {

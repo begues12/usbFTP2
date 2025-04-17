@@ -182,35 +182,22 @@ def submit_password():
 
     connection = Connection.query.get(connection_id)
     if not connection:
-        return jsonify({'error': 'Conexión no encontrada'}), 404
+        return jsonify({'error': 'Conexión no encontrada.'}), 404
 
     if connection.check_password(password):
         # Generar un token temporal
         token = Token.generate_token(connection_id)
-        return jsonify({'message': 'Contraseña correcta. Acceso concedido.', 'token': token}), 200
+
+        # Devolver el token y el tipo de conexión
+        return jsonify({
+            'message': 'Contraseña correcta.',
+            'token': token,
+            'type': connection.type,
+            'folder_url': f"/storage/access_folder/{connection_id}"
+        }), 200
     else:
         return jsonify({'error': 'Contraseña incorrecta.'}), 403
-                    
-@socketio.on('submit_password')
-def handle_submit_password(data):
-    """
-    Maneja el envío de la contraseña por parte del cliente.
-    """
-    connection_id = data.get('connection_id')
-    password = data.get('password')
-
-    connection = Connection.query.get(connection_id)
-
-    if not connection:
-        emit('access_denied', {'message': 'Conexión no encontrada'})
-        return
-
-    # Validar la contraseña usando el método check_password del modelo
-    if connection.check_password(password):
-        emit('access_granted', {'message': f'Acceso concedido a la carpeta "{connection.name}".'})
-    else:
-        emit('access_denied', {'message': 'Contraseña incorrecta. Acceso denegado.'})
-           
+     
 @storage_bp.route('/set_password/<int:connection_id>', methods=['POST'])
 def set_password(connection_id):
     """
@@ -234,3 +221,82 @@ def set_password(connection_id):
         return jsonify({'message': 'Contraseña configurada con éxito.'}), 200
     except Exception as e:
         return jsonify({'error': f'Error al configurar la contraseña: {str(e)}'}), 500
+
+def get_local_storage(connection_id):
+    """
+    Obtiene una instancia de LocalStorage configurada dinámicamente
+    según la conexión proporcionada.
+    """
+    connection = Connection.query.get(connection_id)
+    if not connection:
+        raise ValueError("Conexión no encontrada.")
+    if connection.type != 'local':
+        raise ValueError("El tipo de conexión no es 'local'.")
+    credentials = connection.credentials
+    base_path = credentials.get('base_path')
+    if not base_path:
+        raise ValueError("La conexión no tiene un 'base_path' configurado.")
+    return LocalStorage(base_path=base_path)
+
+@storage_bp.route('/access_connection/<int:connection_id>', methods=['GET'])
+def access_folder(connection_id):
+    """
+    Valida el token o la contraseña y devuelve el tipo de conexión para que el frontend construya la ruta.
+    """
+    folder_path = request.args.get('folder_path', "")
+    token = request.headers.get('Authorization')  # Leer el token del encabezado
+
+    try:
+        # Obtener la conexión
+        connection = Connection.query.get(connection_id)
+        if not connection:
+            return jsonify({'error': 'Conexión no encontrada.'}), 404
+
+        # Verificar si la conexión tiene una contraseña configurada
+        if connection.has_password:
+            if not token:
+                return jsonify({'requires_password': True}), 403
+            if not Token.validate_token(token):  # Validar el token
+                return jsonify({'error': 'Token inválido o expirado.', 'requires_password': True}), 403
+
+        # Devolver el tipo de conexión y la carpeta
+        return jsonify({
+            'type': connection.type,
+            'folder_path': folder_path
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+    
+@storage_bp.route('/list/<int:connection_id>', methods=['GET'])
+def list_connection_files(connection_id):
+    """
+    Lista los archivos y carpetas en la conexión especificada.
+    """
+    #Get in post the folder path
+    folder_path = request.args.get('folder_path', "")
+    token = request.headers.get('Authorization')
+    # Leer el token del encabezado
+    
+    
+    try:
+        connection = Connection.query.get(connection_id)
+        if not connection:
+            return jsonify({'error': 'Conexión no encontrada.'}), 404
+
+        if connection.has_password:
+            if not token:
+                return jsonify({'requires_password': True}), 403
+            if not Token.validate_token(token):  # Validar el token
+                return jsonify({'error': 'Token inválido o expirado.', 'requires_password': True}), 403
+
+        
+        storage_instance = storages.get(connection.type)
+        if not storage_instance:
+            return jsonify({'error': f'Tipo de conexión "{connection.type}" no soportado'}), 400 
+
+        storage = storage_instance.list_files(folder_path)
+        
+        return jsonify(storage), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

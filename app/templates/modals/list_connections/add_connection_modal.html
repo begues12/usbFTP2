@@ -1,10 +1,10 @@
 <!-- filepath: c:\Users\alex\Desktop\usbFTP\app\templates\modals\add_connection_modal.html -->
-<div class="modal fade" id="addConnectionModal" tabindex="-1" aria-labelledby="addConnectionModalLabel" aria-hidden="true">
+<div class="modal modal-add-conn fade" id="addConnectionModal" tabindex="-1" aria-labelledby="addConnectionModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="addConnectionModalLabel">Añadir Nueva Conexión</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                <button type="button" class="close" data-dismiss="modal-add-conn" aria-label="Cerrar">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -23,7 +23,7 @@
 
                 <!-- Formularios dinámicos -->
                 <div id="connectionForms">
-                    {% include 'modals/list_connections/add_connection_form/dropbox_form.html' %}
+                    {% include 'modals/list_connections/add_connection_form/ftp_form.html' %}
                     {% include 'modals/list_connections/add_connection_form/dropbox_form.html' %}
                     {% include 'modals/list_connections/add_connection_form/google_drive_form.html' %}
                     {% include 'modals/list_connections/add_connection_form/local_form.html' %}
@@ -35,7 +35,7 @@
 </div>
 
 <script>
-    $('#addConnectionModal').on('shown.bs.modal', function () {
+    $('#addConnectionModal').on('shown.bs.modal-add-conn', function () {
         $(this).removeAttr('aria-hidden');
     });
 
@@ -60,11 +60,11 @@
             });
     
             if (response.ok) {
-                alert('Conexión añadida con éxito');
+                showModal('success', 'La conexión se ha añadido correctamente.');
                 location.reload(); // Recargar la página para actualizar la lista de conexiones
             } else {
                 const error = await response.json();
-                alert(`Error: ${error.error}`);
+                showModal('error', `Error al añadir la conexión: ${error.message}`);
             }
         } catch (error) {
             console.error('Error al añadir la conexión:', error);

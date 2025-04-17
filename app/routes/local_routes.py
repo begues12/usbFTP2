@@ -3,6 +3,8 @@ from app.storage.local_storage import LocalStorage
 import os
 from app import db
 from app.models.connection_model import Connection
+from app.models.token_model import Token
+
 
 local_bp = Blueprint('local', __name__)
 
@@ -26,22 +28,24 @@ def get_local_storage(connection_id):
 def list_local_files(connection_id):
     """
     Lista los archivos y carpetas en el almacenamiento local y verifica si requiere un token válido.
+    Si la conexión tiene una contraseña configurada, valida el token.
+    Si no tiene contraseña configurada, muestra directamente el explorador de archivos.
     """
     folder_path = request.args.get('folder_path', "")
     token = request.headers.get('Authorization')  # Leer el token del encabezado
 
     try:
-        # Validar el token si está presente
-        if token:
-            if not Token.validate_token(token):
-                return jsonify({'error': 'Token inválido o expirado.'}), 403
-        else:
-            # Si no hay token, verificar si la conexión requiere contraseña
-            connection = Connection.query.get(connection_id)
-            if not connection:
-                return jsonify({'error': 'Conexión no encontrada.'}), 404
-            if connection.has_password:
+        # Obtener la conexión
+        connection = Connection.query.get(connection_id)
+        if not connection:
+            return jsonify({'error': 'Conexión no encontrada.'}), 404
+
+        # Verificar si la conexión tiene una contraseña configurada
+        if connection.has_password:
+            if not token:
                 return jsonify({'requires_password': True}), 403
+            if not Token.validate_token(token):  # Validar el token
+                return jsonify({'error': 'Token inválido o expirado.', 'requires_password': True}), 403
 
         # Obtener la instancia de LocalStorage
         local_storage = get_local_storage(connection_id)
@@ -56,8 +60,7 @@ def list_local_files(connection_id):
         )
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    
-                            
+                                            
 @local_bp.route('/<int:connection_id>/download', methods=['GET'])
 def download_local_file(connection_id):
     """
@@ -83,8 +86,6 @@ def delete_local_file(connection_id):
         return jsonify({'message': 'Archivo eliminado con éxito'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
         
 @local_bp.route('/prepare', methods=['POST'])
 def prepare_local_folders():

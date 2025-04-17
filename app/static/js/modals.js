@@ -14,19 +14,23 @@ function showModal(type, message) {
     const modalConfig = {
         success: {
             bgColor: 'bg-success',
-            icon: '✔️'
+            icon: '✔️',
+            text_color: 'text-ligth'
         },
         error: {
             bgColor: 'bg-danger',
-            icon: '⚠️'
+            icon: '⚠️',
+            text_color: 'text-ligth'
         },
         info: {
             bgColor: 'bg-info',
-            icon: 'ℹ️'
+            icon: 'ℹ️',
+            text_color: 'text-black'
         },
         warning: {
             bgColor: 'bg-warning',
-            icon: '⚠️'
+            icon: '⚠️',
+            text_color: 'text-black'
         }
     };
 
@@ -44,7 +48,7 @@ function showModal(type, message) {
         <div class="d-flex">
             <div class="toast-body d-flex align-items-center">
                 <span class="me-2 fs-4">${config.icon}</span>
-                <span>${message}</span>
+                <span class="${config.text_color}">${message}</span>
             </div>
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
