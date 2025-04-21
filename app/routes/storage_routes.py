@@ -1,34 +1,47 @@
 from flask import Blueprint, request, jsonify, render_template
 from app.models.connection_model import Connection
-from app.models.token_model import Token
-from app.routes.ftp_routes import ftp_bp
-from app.routes.dropbox_routes import dropbox_bp
-from app.routes.google_drive_routes import google_drive_bp
 from app.storage.ftp_storage import FTPStorage
 from app.storage.dropbox_storage import DropboxStorage
 from app.storage.google_drive_storage import GoogleDriveStorage
 from app.storage.local_storage import LocalStorage
-from app.routes.local_routes import local_bp
 from app.extensions import socketio, db  # Importar socketio y db desde extensions.py
 from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
 import os
 
 
-storages = {
-    'ftp'           : FTPStorage(),
-    'dropbox'       : DropboxStorage(),
-    'google_drive'  : GoogleDriveStorage(),
-    'local'         : LocalStorage()     
-}
-
 storage_bp = Blueprint('storage', __name__)
 
-# Registrar los Blueprints específicos
-storage_bp.register_blueprint(ftp_bp, url_prefix='/ftp')
-storage_bp.register_blueprint(dropbox_bp, url_prefix='/dropbox')
-storage_bp.register_blueprint(google_drive_bp, url_prefix='/google_drive')
-storage_bp.register_blueprint(local_bp, url_prefix='/local')
+storages = {
+    'local'         : LocalStorage,
+    'ftp'           : FTPStorage,
+    'dropbox'       : DropboxStorage,
+    'google_drive'  : GoogleDriveStorage
+}
+
+# -------------------------------
+# Funciones de utilidad
+# -------------------------------
+def get_storage(connection_id):
+    """
+    Obtiene una instancia de Storage configurada dinámicamente
+    según la conexión proporcionada.
+    """
+    connection = Connection.query.get(connection_id)
+    if not connection:
+        raise ValueError("Conexión no encontrada.")
+        
+    if connection.type == 'local':
+        return LocalStorage(connection_id)
+    elif connection.type == 'ftp':
+        return FTPStorage(connection_id)
+    elif connection.type == 'dropbox':
+        return DropboxStorage(connection_id)
+    elif connection.type == 'google_drive':
+        return GoogleDriveStorage(connection_id)
+    else:
+        return ValueError("Tipo de conexión no soportado.")
+
 
 # -------------------------------
 # Rutas generales
@@ -45,32 +58,19 @@ def list_connections():
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         result = []
         for connection in connections:
-            # Probar la conexión rápidamente
-            storage_instance = storages.get(connection.type)
-            status = 'pending'  # Estado predeterminado
-
-            # Verificar si la conexión está montada
-            if connection.type == 'local':
-                mount_path = connection.credentials.get('base_path')
-                status = 'mount' if os.path.exists(mount_path) else 'error'
-            elif storage_instance:
-                try:
-                    storage_instance.test_connection(connection.credentials)
-                    status = 'success'
-                except Exception:
-                    status = 'error'
-            else:
-                status = 'unsupported'
-
-
-            
-            
+            storage_instance = get_storage(connection.id)
+            storage_instance.connect()  
+            try:
+                status = storage_instance.test_connection()
+            except Exception as e:
+                status = f"Error: {str(e)}"
+                
             result.append({
-                'id': connection.id,
-                'name': connection.name,
-                'type': connection.type,
-                'status': status,  # Estado de la conexión
-                'has_password': bool(connection.has_password),  # Verificar si tiene contraseña
+                'id'            : storage_instance.id,
+                'name'          : storage_instance.name,
+                'type'          : storage_instance.type,
+                'status'        : status,
+                'has_password'  : storage_instance.has_password(),
             })
 
         return jsonify(result)
@@ -78,44 +78,69 @@ def list_connections():
     # Renderizar el template para solicitudes normales
     return render_template('list_connections.html', connections=connections)
 
-@storage_bp.route('/add_connection/<storage_type>', methods=['POST'])
-def add_connection(storage_type):
+@storage_bp.route('/add_connection', methods=['POST'])
+def add_connection():
     """
     Maneja la creación de una nueva conexión según el tipo de almacenamiento.
     """
-    if request.method == 'POST':
-        # Obtener los datos del formulario o JSON
-        if request.is_json:
-            credentials = request.get_json()
-        else:
-            credentials = request.form.to_dict()
+    data = request.get_json() if request.is_json else request.form.to_dict()
 
-        connection_name = credentials.get('name')
+    connection_name = data.get('name')
+    connection_type = data.get('storage_type')
+    credentials = data.copy()
+    credentials.pop('name', None)  # Eliminar el nombre de las credenciales
+    credentials.pop('type', None)  # Eliminar el tipo de las credenciales
 
-        # Validar el tipo de almacenamiento
-        if storage_type not in storages:
-            return jsonify({'error': f'Tipo de almacenamiento "{storage_type}" no soportado'}), 400
+    # Validar los datos básicos
+    if not connection_name or not connection_type:
+        return jsonify({'error': 'El nombre y el tipo de conexión son obligatorios.'}), 400
 
-        if storage_type == 'local':
+    # Validar el tipo de almacenamiento
+    if connection_type not in storages:
+        return jsonify({'error': f'Tipo de almacenamiento "{connection_type}" no soportado.'}), 400
+
+    # Configuración específica para cada tipo de almacenamiento
+    try:
+        if connection_type == 'local':
             base_storage_path = "/home/usbFTP/"
             base_path = os.path.join(base_storage_path, connection_name)
+            os.makedirs(base_path, exist_ok=True)
+            credentials['base_path'] = base_path
 
-            try:
-                os.makedirs(base_path, exist_ok=True)
-                credentials['base_path'] = base_path 
-            except Exception as e:
-                return jsonify({'error': f'Error al crear la carpeta local: {str(e)}'}), 500
+        elif connection_type == 'ftp':
+            required_keys = ['host', 'username', 'password']
+            for key in required_keys:
+                if key not in credentials:
+                    return jsonify({'error': f'La credencial "{key}" es obligatoria para FTP.'}), 400
 
-        storage_instance = storages[storage_type]
-        try:
-            storage_instance.connect(credentials) 
-        except Exception as e:
-            return jsonify({'error': f'Error al validar la conexión: {str(e)}'}), 400
+            ftp_storage = FTPStorage()
+            ftp_storage.connect(credentials)
 
-        connection = Connection(name=connection_name, type=storage_type, credentials=credentials)
+        elif connection_type == 'dropbox':
+            if 'access_token' not in credentials:
+                return jsonify({'error': 'El "access_token" es obligatorio para Dropbox.'}), 400
+
+            dropbox_storage = DropboxStorage()
+            dropbox_storage.connect(credentials)
+
+        elif connection_type == 'google_drive':
+            if 'credentials_file' not in credentials:
+                return jsonify({'error': 'El archivo "credentials_file" es obligatorio para Google Drive.'}), 400
+
+            google_drive_storage = GoogleDriveStorage()
+            google_drive_storage.connect(credentials)
+
+        else:
+            return jsonify({'error': f'Tipo de almacenamiento "{connection_type}" no soportado.'}), 400
+
+        connection = Connection(name=connection_name, type=connection_type, credentials=credentials)
         connection.save()
-        return jsonify({'message': 'Conexión añadida con éxito'}), 200
-        
+
+        return jsonify({'message': 'Conexión añadida con éxito.'}), 200
+
+    except Exception as e:
+        return jsonify({'error': f'Error al crear la conexión: {str(e)}'}), 500
+            
 @storage_bp.route('/delete_connection/<int:connection_id>', methods=['POST'])
 def delete_connection(connection_id):
     """
@@ -147,7 +172,7 @@ def delete_connection(connection_id):
         return jsonify({'error': f'Error al eliminar la conexión: {str(e)}'}), 500
             
 @storage_bp.route('/mount/<int:connection_id>', methods=['POST'])
-def mount_folder(connection_id):
+def mount_connection(connection_id):
     """
     Monta una carpeta para que sea accesible con el gadget mode.
     """
@@ -176,23 +201,21 @@ def submit_password():
     """
     Valida la contraseña enviada por el cliente y genera un token temporal.
     """
-    data = request.get_json()
-    connection_id = data.get('connection_id')
-    password = data.get('password')
+    data            = request.get_json()
+    connection_id   = data.get('connection_id')
+    password        = data.get('password')
 
-    connection = Connection.query.get(connection_id)
+    connection = get_storage(connection_id)
     if not connection:
         return jsonify({'error': 'Conexión no encontrada.'}), 404
 
     if connection.check_password(password):
-        # Generar un token temporal
-        token = Token.generate_token(connection_id)
+        token = connection.generate_token()
 
-        # Devolver el token y el tipo de conexión
         return jsonify({
-            'message': 'Contraseña correcta.',
-            'token': token,
-            'type': connection.type,
+            'message'   : 'Contraseña correcta.',
+            'token'     : token,
+            'type'      : connection.type,
             'folder_url': f"/storage/access_folder/{connection_id}"
         }), 200
     else:
@@ -203,13 +226,13 @@ def set_password(connection_id):
     """
     Configura o actualiza la contraseña de una conexión, almacenándola como un hash.
     """
-    data = request.get_json()
-    password = data.get('password')
+    data        = request.get_json()
+    password    = data.get('password')
 
     if not password:
         return jsonify({'error': 'La contraseña es obligatoria.'}), 400
 
-    connection = Connection.query.get(connection_id)
+    connection = get_storage(connection_id)
 
     if not connection:
         return jsonify({'error': 'Conexión no encontrada.'}), 404
@@ -221,79 +244,73 @@ def set_password(connection_id):
         return jsonify({'message': 'Contraseña configurada con éxito.'}), 200
     except Exception as e:
         return jsonify({'error': f'Error al configurar la contraseña: {str(e)}'}), 500
-
-def get_local_storage(connection_id):
-    """
-    Obtiene una instancia de LocalStorage configurada dinámicamente
-    según la conexión proporcionada.
-    """
-    connection = Connection.query.get(connection_id)
-    if not connection:
-        raise ValueError("Conexión no encontrada.")
-    if connection.type != 'local':
-        raise ValueError("El tipo de conexión no es 'local'.")
-    credentials = connection.credentials
-    base_path = credentials.get('base_path')
-    if not base_path:
-        raise ValueError("La conexión no tiene un 'base_path' configurado.")
-    return LocalStorage(base_path=base_path)
-
-@storage_bp.route('/access_connection/<int:connection_id>', methods=['GET'])
-def access_folder(connection_id):
-    """
-    Valida el token o la contraseña y devuelve el tipo de conexión para que el frontend construya la ruta.
-    """
-    folder_path = request.args.get('folder_path', "")
-    token = request.headers.get('Authorization')  # Leer el token del encabezado
-
-    try:
-        # Obtener la conexión
-        connection = Connection.query.get(connection_id)
-        if not connection:
-            return jsonify({'error': 'Conexión no encontrada.'}), 404
-
-        # Verificar si la conexión tiene una contraseña configurada
-        if connection.has_password:
-            if not token:
-                return jsonify({'requires_password': True}), 403
-            if not Token.validate_token(token):  # Validar el token
-                return jsonify({'error': 'Token inválido o expirado.', 'requires_password': True}), 403
-
-        # Devolver el tipo de conexión y la carpeta
-        return jsonify({
-            'type': connection.type,
-            'folder_path': folder_path
-        }), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    
+  
 @storage_bp.route('/list/<int:connection_id>', methods=['GET'])
 def list_connection_files(connection_id):
     """
     Lista los archivos y carpetas en la conexión especificada.
     """
-    #Get in post the folder path
     folder_path = request.args.get('folder_path', "")
-    token = request.headers.get('Authorization')
- 
+    token       = request.headers.get('Authorization')
+
     try:
-        connection = Connection.query.get(connection_id)
-        if not connection:
-            return jsonify({'error': 'Conexión no encontrada.'}), 404
-
-        if connection.has_password:
-            if not token:
-                return jsonify({'requires_password': True}), 403
-            if not Token.validate_token(token):  # Validar el token
-                return jsonify({'error': 'Token inválido o expirado.', 'requires_password': True}), 403
-
+        storage = get_storage(connection_id)
         
-        storage_instance = storages.get(connection.type)
-        if not storage_instance:
-            return jsonify({'error': f'Tipo de conexión "{connection.type}" no soportado'}), 400 
+        if not storage.validate_token(token) and storage.has_password():
+            return jsonify({'requires_password': True}), 403
 
-        storage = storage_instance.list_files(folder_path)
-        
-        return jsonify(storage), 200
+        file_list = storage.list_files(folder_path)
+        return render_template(
+            'storage_explorer.html',
+            files=file_list,
+            folder_path=folder_path,
+            connection_id=connection_id,
+            storage_type=storage.name
+        )
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return render_template(
+            'storage_explorer.html',
+            error=str(e),
+            files=[],
+            folder_path=folder_path,
+            connection_id=connection_id,
+            name="-"
+        )
+        
+@storage_bp.route('/download_file/<int:connection_id>', methods=['GET'])
+def download_file(connection_id):
+    """
+    Descarga un archivo desde la conexión especificada.
+    """
+    file_path = request.args.get('file_path')
+
+    if not file_path:
+        return jsonify({'error': 'La ruta del archivo es obligatoria.'}), 400
+
+    try:
+        storage = get_storage(connection_id)
+        file_full_path = storage.download_file(file_path)
+
+        # Enviar el archivo como respuesta
+        return send_file(file_full_path, as_attachment=True)
+    except Exception as e:
+        return jsonify({'error': f'Error al descargar el archivo: {str(e)}'}), 500
+    
+
+@storage_bp.route('/delete_file/<int:connection_id>', methods=['POST'])
+def delete_file(connection_id):
+    """
+    Elimina un archivo o carpeta en la conexión especificada.
+    """
+    data = request.form
+    file_path = data.get('file_path')
+
+    if not file_path:
+        return jsonify({'error': 'La ruta del archivo es obligatoria.'}), 400
+
+    try:
+        storage = get_storage(connection_id)
+        storage.delete_file(file_path)
+        return jsonify({'message': 'Archivo eliminado con éxito.'}), 200
+    except Exception as e:
+        return jsonify({'error': f'Error al eliminar el archivo: {str(e)}'}), 500

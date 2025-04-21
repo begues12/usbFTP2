@@ -1,10 +1,11 @@
 <!-- filepath: c:\Users\afuentes\Documents\usbFTP2\app\templates\add_connection_form\local_form.html -->
-<form id="localForm" class="connection-form d-none p-3 border rounded shadow-sm bg-light" method="POST" action="{{ url_for('storage.add_connection', storage_type='local') }}">
+<form id="localForm" class="connection-form d-none p-3 border rounded shadow-sm bg-light" method="POST" action="{{ url_for('storage.add_connection') }}">
     <h5 class="text-center mb-4">Añadir Conexión Local</h5>
     
     <div class="form-group">
         <label for="localName" class="form-label">Nombre de la conexión</label>
         <input type="text" class="form-control" id="localName" name="name" placeholder="Ejemplo: Mi Carpeta Local" required>
+        <input type="hidden" name="storage_type" value="local">
     </div>
     
     <div class="text-center mt-4">

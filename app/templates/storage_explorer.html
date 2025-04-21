@@ -1,10 +1,9 @@
-<!-- filepath: c:\Users\alex\Desktop\usbFTP\app\templates\files_explorer\local_explorer.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Explorador Local</title>
+    <title>Explorador de Archivos</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
@@ -14,7 +13,7 @@
     
     <div class="header text-center">
         <div class="container">
-            <h1>Explorador Local</h1>
+            <h1>{{ name }}</h1>
         </div>
     </div>
 
@@ -27,12 +26,11 @@
         </div>
         {% endif %}
 
-        <!-- filepath: c:\Users\alex\Desktop\usbFTP\app\templates\files_explorer\local_explorer.html -->
         <div class="mb-3">
             {% if folder_path %}
             <!-- Si no estás en la raíz, calcula la carpeta anterior -->
             {% set parent_folder = folder_path.rsplit('/', 1)[0] if '/' in folder_path else '' %}
-            <a href="{{ url_for('storage.local.list_local_files', connection_id=connection_id, folder_path=parent_folder) }}" class="btn btn-secondary">
+            <a href="{{ url_for('storage.list_connection_files', connection_id=connection_id, folder_path=parent_folder) }}" class="btn btn-secondary">
                 <i class="bi bi-arrow-left"></i> Volver
             </a>
             {% else %}
@@ -58,7 +56,7 @@
                 <tr>
                     <td>
                         {% if file.is_dir %}
-                        <a href="{{ url_for('storage.local.list_local_files', connection_id=connection_id, folder_path=file.path) }}">
+                        <a href="{{ url_for('storage.list_connection_files', connection_id=connection_id, folder_path=file.path) }}">
                             <i class="bi bi-folder-fill text-warning"></i> {{ file.name }}
                         </a>
                         {% else %}
@@ -69,11 +67,11 @@
                     <td>{{ file.modified_time }}</td>
                     <td>
                         {% if not file.is_dir %}
-                        <a href="{{ url_for('storage.local.download_local_file', connection_id=connection_id, file_path=file.path) }}" class="btn btn-primary btn-sm">
+                        <a href="{{ url_for('storage.download_file', connection_id=connection_id, file_path=file.path) }}" class="btn btn-primary btn-sm">
                             Descargar
                         </a>
                         {% endif %}
-                        <form action="{{ url_for('storage.local.delete_local_file', connection_id=connection_id) }}" method="POST" style="display:inline;">
+                        <form action="{{ url_for('storage.delete_file', connection_id=connection_id) }}" method="POST" style="display:inline;">
                             <input type="hidden" name="file_path" value="{{ file.path }}">
                             <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
                         </form>
@@ -82,5 +80,6 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
 </body>
 </html>

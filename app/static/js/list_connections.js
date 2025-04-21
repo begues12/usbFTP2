@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 connections.forEach(connection => {
                     const row = document.createElement('tr');
                     row.classList.add('clickable-row');
-                    row.setAttribute('data-url', `/storage/${connection.type}/${connection.id}/list`);
+                    row.setAttribute('data-url', `/storage/list/${connection.id}`);
                 
                     row.innerHTML = `
                         <td>
@@ -77,18 +77,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
 
                 document.querySelectorAll('.clickable-row').forEach(row => {
-
                     row.addEventListener('click', async function (event) {
                         if (event.target.closest('.dropdown')) {
                             return;
                         }
                 
-                        const url           = this.getAttribute('data-url');
-                        const connectionId  = this.getAttribute('data-url').split('/')[3];
+                        const url = this.getAttribute('data-url');
+                        const connectionId = this.getAttribute('data-url').split('/')[3];
                 
                         try {
-                            const token     = localStorage.getItem(`token_${connectionId}`);
-                            const headers   = {
+                            const token = localStorage.getItem(`token_${connectionId}`);
+                            const headers = {
                                 'Content-Type': 'application/json'
                             };
                 
@@ -101,105 +100,39 @@ document.addEventListener('DOMContentLoaded', function () {
                                 headers: headers
                             });
                 
-                            if (response.status === 403) {
-                                const data = await response.json();
-                                if (data.requires_password) {
-                                    const passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
-                                    document.getElementById('submitPasswordButton').setAttribute('data-connection-id', connectionId);
-                                    passwordModal.show();
+                            await handleForbiddenResponse(response, connectionId, async () => {
+                                const token = localStorage.getItem(`token_${connectionId}`);
+                                const headers = {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                };
+                            
+                                // Realizar la solicitud con el token
+                                const retryResponse = await fetch(url, {
+                                    method: 'GET',
+                                    headers: headers
+                                });
+                            
+                                if (retryResponse.ok) {
+                                    window.location.href = url;
                                 } else {
-                                    alert('Token inválido o expirado. Por favor, ingrese la contraseña nuevamente.');
+                                    showModal('error', 'Error al abrir la conexión después de aceptar la contraseña.');
                                 }
-                            } else if (response.ok) {
-                                const data = await response.json();
+                            });
                 
-                                // Construir la URL en función del tipo de conexión
-                                const redirectUrl = `/${data.type}/${connectionId}/list?folder_path=${encodeURIComponent(data.folder_path)}`;
-                                window.location.href = redirectUrl;
-                            } else {
-                                alert('Error al abrir la conexión.');
+                            if (response.ok) {
+                                window.location.href = url;
+                            } else if (response.status !== 403) {
+                                showModal('error', 'Error al abrir la conexión.');
                             }
                         } catch (error) {
                             console.error('Error al realizar la solicitud:', error);
-                            alert('Error inesperado al abrir la conexión.');
+                            showModal('error', 'Error inesperado al abrir la conexión.');
                         }
                     });
                 });
                 
-                document.getElementById('submitPasswordButton').addEventListener('click', async function () {
-                    const connectionId = this.getAttribute('data-connection-id');
-                    const password = document.getElementById('passwordInput').value;
-                
-                    try {
-                        const response = await fetch(`/storage/submit_password`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ connection_id: connectionId, password: password })
-                        });
-                
-                        const data = await response.json();
-                        if (response.ok) {
-                            // Guardar el token en el almacenamiento local
-                            localStorage.setItem(`token_${connectionId}`, data.token);
-                
-                            // Mostrar un mensaje de éxito
-                            showModal('success', 'Contraseña correcta. Token almacenado.');
-                
-                            // Opcional: Llamar a otra función para acceder a la carpeta
-                            accessFolder(connectionId);
-                        } else {
-                            showModal('error', data.error || 'Contraseña incorrecta.');
-                        }
-                    } catch (error) {
-                        console.error('Error al enviar la contraseña:', error);
-                        showModal('error', 'Error inesperado al enviar la contraseña.');
-                    }
-                });
-                
-                async function accessFolder(connectionId) {
-                    const token = localStorage.getItem(`token_${connectionId}`);
-                    if (!token) {
-                        alert('No se encontró un token válido. Por favor, configure la contraseña nuevamente.');
-                        return;
-                    }
-                
-                    try {
-                        const response = await fetch(`/storage/access_folder/${connectionId}`, {
-                            method: 'GET',
-                            headers: {
-                                'Authorization': `Bearer ${token}`
-                            }
-                        });
-                
-                        if (response.ok) {
-                            const data = await response.json();
-                            console.log('Acceso a la carpeta:', data);
-                
-                            // Opcional: Mostrar los datos en la consola o en la interfaz
-                            // Por ejemplo, puedes renderizar los archivos en un contenedor
-                            renderFiles(data);
-                        } else {
-                            alert('Error al acceder a la carpeta.');
-                        }
-                    } catch (error) {
-                        console.error('Error al acceder a la carpeta:', error);
-                    }
-                }
-                
-                function renderFiles(data) {
-                    const filesContainer = document.getElementById('filesContainer');
-                    filesContainer.innerHTML = ''; // Limpiar contenido previo
-                
-                    data.files.forEach(file => {
-                        const fileElement = document.createElement('div');
-                        fileElement.textContent = file.name; // Mostrar el nombre del archivo
-                        filesContainer.appendChild(fileElement);
-                    });
-                }
 
-                // Manejar las acciones del menú desplegable
                 document.querySelectorAll('.mount-folder').forEach(item => {
                     item.addEventListener('click', async function (event) {
                         event.preventDefault();
@@ -257,7 +190,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 });
 
-                // Verificar cambios de estado
                 connections.forEach(connection => {
                     if (previousStates[connection.id] && previousStates[connection.id] !== connection.status) {
                         showModal('info', `La conexión "${connection.name}" cambió de estado: ${connection.status}`);
@@ -274,7 +206,65 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Vincular la función fetchConnections al botón de "Actualizar"
+    async function submitPassword(connectionId, password) {
+        try {
+            const response = await fetch(`/storage/submit_password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ connection_id: connectionId, password: password })
+            });
+    
+            const data = await response.json();
+    
+            if (response.ok) {
+                localStorage.setItem(`token_${connectionId}`, data.token);
+    
+                showModal('success', 'Contraseña correcta. Token almacenado.');
+                return { success: true, token: data.token };
+            } else {
+                showModal('error', data.error || 'Contraseña incorrecta.');
+                return { success: false, error: data.error };
+            }
+        } catch (error) {
+            console.error('Error al enviar la contraseña:', error);
+            showModal('error', 'Error inesperado al enviar la contraseña.');
+            return { success: false, error: 'Error inesperado' };
+        }
+    }
+
+    async function handleForbiddenResponse(response, connectionId, onSuccessCallback) {
+        if (response.status === 403) {
+            const passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
+            const submitButton = document.getElementById('submitPasswordButton');
+            const passwordInput = document.getElementById('passwordInput');
+    
+            submitButton.setAttribute('data-connection-id', connectionId);
+    
+            const handlePasswordSubmit = async () => {
+                const password = passwordInput.value;
+    
+                const result = await submitPassword(connectionId, password);
+    
+                if (result.success) {
+                    const token = result.token;
+    
+                    // Ejecutar el callback con el token
+                    if (onSuccessCallback) {
+                        onSuccessCallback(token);
+                    }
+    
+                    passwordModal.hide();
+                }
+            };
+    
+            submitButton.addEventListener('click', handlePasswordSubmit, { once: true });
+    
+            passwordModal.show();
+        }
+    }
+
     refreshButton.addEventListener('click', fetchConnections);
-    fetchConnections(); // Llamar a la función al cargar la página
+    fetchConnections(); 
 });
