@@ -69,7 +69,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     connectionsTable.appendChild(row);
                 });
 
-                // Inicializar tooltips de Bootstrap
                 const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
                 tooltipTriggerList.forEach(function (tooltipTriggerEl) {
                     new bootstrap.Tooltip(tooltipTriggerEl, {
@@ -78,17 +77,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
 
                 document.querySelectorAll('.clickable-row').forEach(row => {
+
                     row.addEventListener('click', async function (event) {
                         if (event.target.closest('.dropdown')) {
-                            return; // Evitar que el clic en el menú desplegable dispare la acción
+                            return;
                         }
                 
-                        const url = this.getAttribute('data-url');
-                        const connectionId = this.getAttribute('data-url').split('/')[3]; // Extraer el ID de la conexión
+                        const url           = this.getAttribute('data-url');
+                        const connectionId  = this.getAttribute('data-url').split('/')[3];
                 
                         try {
-                            const token = localStorage.getItem(`token_${connectionId}`);
-                            const headers = {
+                            const token     = localStorage.getItem(`token_${connectionId}`);
+                            const headers   = {
                                 'Content-Type': 'application/json'
                             };
                 
@@ -96,7 +96,6 @@ document.addEventListener('DOMContentLoaded', function () {
                                 headers['Authorization'] = `Bearer ${token}`;
                             }
                 
-                            // Realizar la solicitud con los encabezados configurados
                             const response = await fetch(url, {
                                 method: 'GET',
                                 headers: headers
@@ -105,7 +104,6 @@ document.addEventListener('DOMContentLoaded', function () {
                             if (response.status === 403) {
                                 const data = await response.json();
                                 if (data.requires_password) {
-                                    // Mostrar el modal para ingresar la contraseña
                                     const passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
                                     document.getElementById('submitPasswordButton').setAttribute('data-connection-id', connectionId);
                                     passwordModal.show();

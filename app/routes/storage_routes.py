@@ -267,7 +267,6 @@ def access_folder(connection_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
-    
 @storage_bp.route('/list/<int:connection_id>', methods=['GET'])
 def list_connection_files(connection_id):
     """
@@ -276,9 +275,7 @@ def list_connection_files(connection_id):
     #Get in post the folder path
     folder_path = request.args.get('folder_path', "")
     token = request.headers.get('Authorization')
-    # Leer el token del encabezado
-    
-    
+ 
     try:
         connection = Connection.query.get(connection_id)
         if not connection:

@@ -3,11 +3,12 @@ import subprocess
 
 
 class LocalStorage:
-    def __init__(self, base_path=None):
+    def __init__(self, credentials=None):
         """
         Inicializa el almacenamiento local con una carpeta base.
+          "error": "'dict' object has no attribute 'base_path'"
         """
-        self.base_path = base_path
+        self.base_path = credentials.get('base_path') if credentials else None
 
     def connect(self, credentials):
         """
@@ -25,7 +26,6 @@ class LocalStorage:
         """
         base_path = credentials.get('base_path')
         if base_path and os.path.exists(base_path):
-            # Aquí puedes realizar operaciones adicionales si es necesario
             print(f"Desmontando LocalStorage en {base_path}")
         
     def list_files(self, folder_path=""):
@@ -43,11 +43,11 @@ class LocalStorage:
         for item in os.listdir(full_path):
             item_path = os.path.join(full_path, item)
             files.append({
-                "name": item,
-                "is_dir": os.path.isdir(item_path),
-                "size": os.path.getsize(item_path) if os.path.isfile(item_path) else None,
-                "modified_time": os.path.getmtime(item_path),
-                "path": os.path.relpath(item_path, self.base_path)
+                "name"          : item,
+                "is_dir"        : os.path.isdir(item_path),
+                "size"          : os.path.getsize(item_path) if os.path.isfile(item_path) else None,
+                "modified_time" : os.path.getmtime(item_path),
+                "path"          : os.path.relpath(item_path, self.base_path)
             })
         return files
 

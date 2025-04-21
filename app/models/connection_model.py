@@ -6,11 +6,11 @@ from app.models.token_model import Token  # Importa el modelo de token para vali
 class Connection(BaseModel):
     __tablename__ = 'connections'
     
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    type = db.Column(db.String(50), nullable=False)  # Ejemplo: 'ftp', 'dropbox', 'google_drive'
-    credentials = db.Column(db.JSON, nullable=False)  # Almacena credenciales como JSON
-    password_hash = db.Column(db.String(255), nullable=True)  # Almacena la contraseña encriptada
+    id              = db.Column(db.Integer, primary_key=True)
+    name            = db.Column(db.String(100), nullable=False)
+    type            = db.Column(db.String(50), nullable=False)  # Ejemplo: 'ftp', 'dropbox', 'google_drive'
+    credentials     = db.Column(db.JSON, nullable=False)  # Almacena credenciales como JSON
+    password_hash   = db.Column(db.String(255), nullable=True)  # Almacena la contraseña encriptada
     
     def __init__(self, name, type, credentials):
         self.name = name
@@ -21,9 +21,10 @@ class Connection(BaseModel):
     def set_password(self, password):
         """Encripta y guarda la contraseña."""
         self.password_hash = generate_password_hash(password)
-
+    
     def has_password(self):
         """Verifica si la conexión tiene una contraseña establecida."""
+        # Print paswword hash for debugging
         return self.password_hash is not None and self.password_hash != ''
     
     def check_password(self, password):

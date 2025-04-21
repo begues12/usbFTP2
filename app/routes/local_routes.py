@@ -1,5 +1,8 @@
 from flask import Blueprint, jsonify, request, send_file, render_template
 from app.storage.local_storage import LocalStorage
+from app.storage.ftp_storage import FTPStorage
+from app.storage.dropbox_storage import DropboxStorage
+from app.storage.google_drive_storage import GoogleDriveStorage
 import os
 from app import db
 from app.models.connection_model import Connection
@@ -8,21 +11,25 @@ from app.models.token_model import Token
 
 local_bp = Blueprint('local', __name__)
 
-def get_local_storage(connection_id):
+def get_storage(connection_id):
     """
-    Obtiene una instancia de LocalStorage configurada dinámicamente
+    Obtiene una instancia de Storage configurada dinámicamente
     según la conexión proporcionada.
     """
     connection = Connection.query.get(connection_id)
     if not connection:
         raise ValueError("Conexión no encontrada.")
-    if connection.type != 'local':
-        raise ValueError("El tipo de conexión no es 'local'.")
-    credentials = connection.credentials
-    base_path = credentials.get('base_path')
-    if not base_path:
-        raise ValueError("La conexión no tiene un 'base_path' configurado.")
-    return LocalStorage(base_path=base_path)
+        
+    if connection.type == 'local':
+        return LocalStorage(connection.credentials)
+    elif connection.type == 'ftp':
+        return FTPStorage(connection.credentials)
+    elif connection.type == 'dropbox':
+        return DropboxStorage(connection.credentials)
+    elif connection.type == 'google_drive':
+        return GoogleDriveStorage(connection.credentials)
+    else:
+        return ValueError("Tipo de conexión no soportado.")
 
 @local_bp.route('/<int:connection_id>/list', methods=['GET'])
 def list_local_files(connection_id):
@@ -32,32 +39,29 @@ def list_local_files(connection_id):
     Si no tiene contraseña configurada, muestra directamente el explorador de archivos.
     """
     folder_path = request.args.get('folder_path', "")
-    token = request.headers.get('Authorization')  # Leer el token del encabezado
+    token       = request.headers.get('Authorization')  # Leer el token del encabezado
 
     try:
-        # Obtener la conexión
         connection = Connection.query.get(connection_id)
+        
         if not connection:
             return jsonify({'error': 'Conexión no encontrada.'}), 404
 
-        # Verificar si la conexión tiene una contraseña configurada
-        if connection.has_password:
+        if connection.has_password():
             if not token:
                 return jsonify({'requires_password': True}), 403
             if not Token.validate_token(token):  # Validar el token
                 return jsonify({'error': 'Token inválido o expirado.', 'requires_password': True}), 403
 
-        # Obtener la instancia de LocalStorage
-        local_storage = get_local_storage(connection_id)
-        files = local_storage.list_files(folder_path)
+        storage = get_storage(connection_id)
+        files   = storage.list_files(folder_path)
 
-        # Renderizar la plantilla con los archivos y carpetas
-        return render_template(
-            'files_explorer/local_explorer.html',
-            files=files,
-            connection_id=connection_id,
-            folder_path=folder_path
-        )
+        return ({
+            'root_path'         : storage.base_path,
+            'files'             : files,
+            'requires_password' : connection.has_password()
+        }), 200
+        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
                                             
@@ -68,8 +72,8 @@ def download_local_file(connection_id):
     """
     file_path = request.args.get('file_path')
     try:
-        local_storage = get_local_storage(connection_id)
-        full_path = local_storage.download_file(file_path)
+        local_storage   = get_storage(connection_id)
+        full_path       = local_storage.download_file(file_path)
         return send_file(full_path, as_attachment=True)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
