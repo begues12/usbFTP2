@@ -1,6 +1,7 @@
 from app.models.connection_model import Connection
 import os
 import json
+import datetime
 
 class LocalStorage(Connection):
     
@@ -56,11 +57,12 @@ class LocalStorage(Connection):
         files = []
         for item in os.listdir(full_path):
             item_path = os.path.join(full_path, item)
+
             files.append({
                 "name"          : item,
                 "is_dir"        : os.path.isdir(item_path),
-                "size"          : os.path.getsize(item_path) if os.path.isfile(item_path) else None,
-                "modified_time" : os.path.getmtime(item_path),
+                "size"          : os.path.getsize(item_path) if not os.path.isdir(item_path) else 0,
+                "modified_time" : datetime.datetime.fromtimestamp(os.path.getmtime(item_path)).strftime("%d/%m/%Y %H:%M"),
                 "path"          : os.path.relpath(item_path, self.base_path)
             })
         return files

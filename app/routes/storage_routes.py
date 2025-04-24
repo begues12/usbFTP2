@@ -153,27 +153,14 @@ def delete_connection(connection_id):
     """
     Elimina una conexión de cualquier tipo.
     """
-    # Obtener la conexión de la base de datos
-    connection = Connection.query.get(connection_id)
-    if not connection:
+    
+    storage = get_storage(connection_id)
+
+    if not storage:
         return jsonify({'error': 'Conexión no encontrada'}), 404
-
-    # Determinar el tipo de conexión
-    connection_type = connection.type
-    storage_instance = storages.get(connection_type)
-
-    if not storage_instance:
-        return jsonify({'error': f'Tipo de conexión "{connection_type}" no soportado'}), 400
-
+    
     try:
-        # Llamar a una función abstracta para desmontar/desconectar
-        if hasattr(storage_instance, 'disconnect'):
-            storage_instance.disconnect(connection.credentials)
-
-        # Eliminar la conexión de la base de datos
-        db.session.delete(connection)
-        db.session.commit()
-
+        storage.delete()
         return jsonify({'message': 'Conexión eliminada con éxito'}), 200
     except Exception as e:
         return jsonify({'error': f'Error al eliminar la conexión: {str(e)}'}), 500
@@ -232,27 +219,32 @@ def submit_password():
 @storage_bp.route('/set_password/<int:connection_id>', methods=['POST'])
 def set_password(connection_id):
     """
-    Configura o actualiza la contraseña de una conexión, almacenándola como un hash.
+    Configura o actualiza la contraseña de una conexión, verificando la contraseña actual.
     """
-    data        = request.get_json()
-    password    = data.get('password')
+    data = request.get_json()
+    current_password = data.get('current_password')
+    new_password = data.get('new_password')
 
-    if not password:
-        return jsonify({'error': 'La contraseña es obligatoria.'}), 400
+    if not current_password or not new_password:
+        return jsonify({'error': 'La contraseña actual y la nueva son obligatorias.'}), 400
 
-    connection = get_storage(connection_id)
+    connection = Connection.query.get(connection_id)
 
     if not connection:
         return jsonify({'error': 'Conexión no encontrada.'}), 404
 
+    # Verificar la contraseña actual
+    if not connection.check_password(current_password):
+        return jsonify({'error': 'La contraseña actual es incorrecta.'}), 403
+
     try:
-        # Usar el método set_password del modelo para guardar la contraseña como hash
-        connection.set_password(password)
-        connection.save()
+        # Configurar la nueva contraseña
+        connection.set_password(new_password)
+        db.session.commit()
         return jsonify({'message': 'Contraseña configurada con éxito.'}), 200
     except Exception as e:
         return jsonify({'error': f'Error al configurar la contraseña: {str(e)}'}), 500
-  
+      
 @storage_bp.route('/list/<int:connection_id>', methods=['POST'])
 def list_connection_files(connection_id):
     """
@@ -263,24 +255,20 @@ def list_connection_files(connection_id):
 
     try:
         storage = get_storage(connection_id)
-
-        print(f"Validated: {storage.validate_token(token)}, Token: {token}")
         
         if token and storage.validate_token(token):
             file_list = storage.list_files(folder_path)
             return render_template(
                 'storage_explorer.html',
-                files=file_list,
-                folder_path=folder_path,
-                connection_id=connection_id,
-                storage_type=storage.name
+                files           = file_list,
+                folder_path     = folder_path,
+                connection_id   = connection_id,
+                storage_type    = storage.name
             )
 
-        # Si no hay un token válido, verificar si se requiere contraseña
         if storage.has_password():
             return jsonify({'requires_password': True}), 403
 
-        # Si no se requiere contraseña, listar los archivos
         file_list = storage.list_files(folder_path)
         return render_template(
             'storage_explorer.html',
@@ -312,8 +300,6 @@ def download_file(connection_id):
     try:
         storage = get_storage(connection_id)
         file_full_path = storage.download_file(file_path)
-
-        # Enviar el archivo como respuesta
         return send_file(file_full_path, as_attachment=True)
     except Exception as e:
         return jsonify({'error': f'Error al descargar el archivo: {str(e)}'}), 500

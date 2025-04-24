@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const refreshButton = document.getElementById('refreshConnectionsButton'); // Botón de "Actualizar"
-    const viewContainer = document.getElementById('viewContainer'); // Contenedor donde se mostrará el contenido
+    const refreshButton = document.getElementById('refreshConnectionsButton');
+    const viewContainer = document.getElementById('viewContainer');
 
     async function fetchConnections() {
         try {

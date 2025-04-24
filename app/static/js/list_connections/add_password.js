@@ -1,50 +1,51 @@
 $(document).ready(function () {
     const setPasswordModal = new bootstrap.Modal(document.getElementById('setPasswordModal'));
-    const newPasswordInput = $('#newPasswordInput'); // Convertir a objeto jQuery
-    const confirmPasswordInput = $('#confirmPasswordInput'); // Convertir a objeto jQuery
-    const savePasswordButton = $('#savePasswordButton');
+    const currentPasswordInput  = $('#currentPasswordInput');
+    const newPasswordInput      = $('#newPasswordInput');
+    const confirmPasswordInput  = $('#confirmPasswordInput');
+    const savePasswordButton    = $('#savePasswordButton');
 
-    let currentConnectionId = null; // Guardar el ID de la conexión actual para configurar la contraseña
+    let currentConnectionId = null; 
 
-    // Asignar evento dinámico al botón "Configurar Contraseña"
     $(document).on('click', '.set-password', function (event) {
         event.preventDefault();
-        currentConnectionId = $(this).data('id'); // Obtener el ID de la conexión
-        newPasswordInput.val(''); 
-        confirmPasswordInput.val(''); // Limpiar el campo de confirmación
-        setPasswordModal.show(); // Mostrar el modal
+        currentConnectionId = $(this).data('id');
+        currentPasswordInput.val('');
+        newPasswordInput.val('');
+        confirmPasswordInput.val('');
+        setPasswordModal.show();
     });
 
-    console.log('currentConnectionId', currentConnectionId); // Verificar el ID de la conexión actual
-
-    // Manejar el guardado de la contraseña
     savePasswordButton.on('click', async function () {
-        const newPassword = newPasswordInput.val().trim();
-        const confirmPassword = confirmPasswordInput.val().trim();
+        const currentPassword   = currentPasswordInput.val().trim();
+        const newPassword       = newPasswordInput.val().trim();
+        const confirmPassword   = confirmPasswordInput.val().trim();
 
-        if (newPassword === '' || confirmPassword === '') {
-            showModal('warning', 'Por favor, completa ambos campos.');
+        if (currentPassword === '' || newPassword === '' || confirmPassword === '') {
+            showModal('warning', 'Por favor, completa todos los campos.');
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            showModal('error', 'Las contraseñas no coinciden.');
+            showModal('error', 'Las nuevas contraseñas no coinciden.');
             return;
         }
 
         try {
-            // Enviar la solicitud al servidor para configurar la contraseña
             const response = await fetch(`/storage/set_password/${currentConnectionId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ password: newPassword }) // Enviar la contraseña como JSON
+                body: JSON.stringify({
+                    current_password: currentPassword,
+                    new_password    : newPassword
+                })
             });
 
             if (response.ok) {
                 showModal('success', 'Contraseña configurada con éxito.');
-                setPasswordModal.hide(); // Cerrar el modal
+                setPasswordModal.hide();
             } else {
                 const errorData = await response.json();
                 showModal('error', errorData.error || 'Error al configurar la contraseña.');

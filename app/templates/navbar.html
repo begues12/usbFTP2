@@ -13,16 +13,16 @@
             <ul class="navbar-nav ml-auto">
                 <!-- Enlace a Inicio -->
                 <li class="nav-item">
+                    <i class="fas fa-home"></i>
                     <a class="nav-link {% if request.endpoint == 'home.index' %}active{% endif %}" href="{{ url_for('home.index') }}">Inicio</a>
                 </li>
 
                 <!-- Enlace a Redes Wi-Fi -->
                 <li class="nav-item">
+                    <i class="fas fa-wifi"></i>
                     <a class="nav-link {% if request.endpoint.startswith('wifi') %}active{% endif %}" href="{{ url_for('wifi.list_wifi') }}">Redes Wi-Fi</a>
                 </li>
 
-                <!-- Enlace a Configuración -->
-         
             </ul>
         </div>
     </div>

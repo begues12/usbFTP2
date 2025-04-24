@@ -99,8 +99,16 @@ class Connection(BaseModel):
 
     def delete(self):
         """Elimina la conexión de la base de datos."""
-        db.session.delete(self)
-        db.session.commit()
+        if self.id is None:
+            raise ValueError("No se puede eliminar una conexión sin ID.")
+        
+        connection = Connection.query.get(self.id)
+        if connection:
+            db.session.delete(connection)
+            db.session.commit()
+        else:
+            raise ValueError(f"No se encontró una conexión con ID {self.id}.")
+        
 
     @staticmethod
     def get_all():
