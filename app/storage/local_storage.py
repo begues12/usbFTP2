@@ -1,6 +1,6 @@
 from app.models.connection_model import Connection
 import os
-
+import json
 
 class LocalStorage(Connection):
     
@@ -18,8 +18,8 @@ class LocalStorage(Connection):
         self.type           = connection.type
         self.credentials    = connection.credentials
         self.password_hash  = connection.password_hash
-        self.base_path      = self.credentials.get('base_path', None)
-
+        self.base_path      = self.credentials.get('base_path', "") 
+        
     def connect(self, token=None):
         """
         Comprueba el token ok

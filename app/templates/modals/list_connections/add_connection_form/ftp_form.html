@@ -1,9 +1,11 @@
 <!-- filepath: c:\Users\alex\Desktop\usbFTP\app\templates\forms\ftp_form.html -->
-<form id="ftpForm" class="connection-form d-none p-3 border rounded shadow-sm bg-light" method="POST" action="{{ url_for('storage.add_connection', storage_type='ftp') }}">
+<form id="ftpForm" class="connection-form d-none p-3 border rounded shadow-sm bg-light"  method="POST" action="{{ url_for('storage.add_connection') }}"">
     <h5 class="text-center mb-4">Añadir Conexión FTP</h5>
+    <input type="hidden" name="storage_type" value="ftp">
     
     <div class="form-group">
         <input type="text" class="form-control" id="ftpName" name="name" placeholder="Ejemplo: Mi Servidor FTP" required>
+    
     </div>
     
     <div class="form-row">

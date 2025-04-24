@@ -1,8 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     const refreshButton = document.getElementById('refreshConnectionsButton'); // Botón de "Actualizar"
-    let previousStates = {};
+    const viewContainer = document.getElementById('viewContainer'); // Contenedor donde se mostrará el contenido
 
-    // Función para obtener y actualizar las conexiones
     async function fetchConnections() {
         try {
             const response = await fetch('/storage/connections', {
@@ -96,105 +95,25 @@ document.addEventListener('DOMContentLoaded', function () {
                             }
                 
                             const response = await fetch(url, {
-                                method: 'GET',
+                                method: 'POST',
                                 headers: headers
                             });
-                
-                            await handleForbiddenResponse(response, connectionId, async () => {
-                                const token = localStorage.getItem(`token_${connectionId}`);
-                                const headers = {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${token}`
-                                };
-                            
-                                // Realizar la solicitud con el token
-                                const retryResponse = await fetch(url, {
-                                    method: 'GET',
-                                    headers: headers
-                                });
-                            
-                                if (retryResponse.ok) {
-                                    window.location.href = url;
-                                } else {
-                                    showModal('error', 'Error al abrir la conexión después de aceptar la contraseña.');
-                                }
-                            });
-                
+
                             if (response.ok) {
-                                window.location.href = url;
-                            } else if (response.status !== 403) {
-                                showModal('error', 'Error al abrir la conexión.');
+                                // Obtener el HTML directamente de la respuesta
+                                const folderHtml = await response.text();
+                                // Incrustar el HTML en el contenedor
+                                viewContainer.innerHTML = folderHtml;
+                            } else if (response.status === 403) {
+                                await handlePasswordFlow(connectionId, url);
+                            } else {
+                                console.log('error', 'Error al abrir la conexión.', response.statusText);
                             }
                         } catch (error) {
                             console.error('Error al realizar la solicitud:', error);
                             showModal('error', 'Error inesperado al abrir la conexión.');
                         }
                     });
-                });
-                
-
-                document.querySelectorAll('.mount-folder').forEach(item => {
-                    item.addEventListener('click', async function (event) {
-                        event.preventDefault();
-                        const connectionId = this.getAttribute('data-id');
-                        try {
-                            const mountResponse = await fetch(`/storage/mount/${connectionId}`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                }
-                            });
-                            if (mountResponse.ok) {
-                                showModal('success', 'Operación de montaje/desmontaje realizada con éxito.');
-                                fetchConnections(); // Actualizar la lista de conexiones
-                            } else {
-                                showModal('error', 'Error al realizar la operación de montaje/desmontaje.');
-                            }
-                        } catch (error) {
-                            showModal('error', 'Error inesperado al realizar la operación de montaje/desmontaje.');
-                        }
-                    });
-                });
-
-                document.querySelectorAll('.edit-connection').forEach(item => {
-                    item.addEventListener('click', function (event) {
-                        event.preventDefault();
-                        const connectionId = this.getAttribute('data-id');
-                        showModal('info', `Editar conexión con ID: ${connectionId}`);
-                    });
-                });
-
-                document.querySelectorAll('.delete-connection').forEach(item => {
-                    item.addEventListener('click', function (event) {
-                        event.preventDefault();
-                        const connectionId = this.getAttribute('data-id');
-                        if (confirm('¿Estás seguro de que deseas borrar esta conexión?')) {
-                            fetch(`/storage/delete_connection/${connectionId}`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                }
-                            })
-                                .then(response => {
-                                    if (response.ok) {
-                                        showModal('success', 'Conexión borrada con éxito.');
-                                        fetchConnections();
-                                    } else {
-                                        showModal('error', 'Error al borrar la conexión.');
-                                    }
-                                })
-                                .catch(error => {
-                                    showModal('error', 'Error inesperado al borrar la conexión.');
-                                });
-                        }
-                    });
-                });
-
-                connections.forEach(connection => {
-                    if (previousStates[connection.id] && previousStates[connection.id] !== connection.status) {
-                        showModal('info', `La conexión "${connection.name}" cambió de estado: ${connection.status}`);
-                    }
-                    previousStates[connection.id] = connection.status;
                 });
             } else {
                 console.error('Error al obtener las conexiones:', response.statusText);
@@ -206,65 +125,65 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    async function submitPassword(connectionId, password) {
-        try {
-            const response = await fetch(`/storage/submit_password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ connection_id: connectionId, password: password })
-            });
-    
-            const data = await response.json();
-    
-            if (response.ok) {
-                localStorage.setItem(`token_${connectionId}`, data.token);
-    
-                showModal('success', 'Contraseña correcta. Token almacenado.');
-                return { success: true, token: data.token };
-            } else {
-                showModal('error', data.error || 'Contraseña incorrecta.');
-                return { success: false, error: data.error };
-            }
-        } catch (error) {
-            console.error('Error al enviar la contraseña:', error);
-            showModal('error', 'Error inesperado al enviar la contraseña.');
-            return { success: false, error: 'Error inesperado' };
-        }
-    }
+    async function handlePasswordFlow(connectionId, url) {
+        const passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
+        const submitButton = document.getElementById('submitPasswordButton');
+        const passwordInput = document.getElementById('passwordInput');
 
-    async function handleForbiddenResponse(response, connectionId, onSuccessCallback) {
-        if (response.status === 403) {
-            const passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
-            const submitButton = document.getElementById('submitPasswordButton');
-            const passwordInput = document.getElementById('passwordInput');
-    
-            submitButton.setAttribute('data-connection-id', connectionId);
-    
-            const handlePasswordSubmit = async () => {
-                const password = passwordInput.value;
-    
-                const result = await submitPassword(connectionId, password);
-    
-                if (result.success) {
-                    const token = result.token;
-    
-                    // Ejecutar el callback con el token
-                    if (onSuccessCallback) {
-                        onSuccessCallback(token);
+        submitButton.setAttribute('data-connection-id', connectionId);
+
+        const handlePasswordSubmit = async () => {
+            const password = passwordInput.value;
+
+            try {
+                const response = await fetch(`/storage/submit_password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ connection_id: connectionId, password: password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem(`token_${connectionId}`, data.token);
+
+                    showModal('success', 'Contraseña correcta. Token almacenado.');
+
+                    const headers = {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${data.token}`
+                    };
+
+                    const retryResponse = await fetch(url, {
+                        method: 'POST',
+                        headers: headers
+                    });
+
+                    if (retryResponse.ok) {
+                        // Obtener el HTML directamente de la respuesta
+                        const folderHtml = await retryResponse.text();
+                        // Incrustar el HTML en el contenedor
+                        viewContainer.innerHTML = folderHtml;
+                    } else {
+                        console.log('error', 'Error al abrir la conexión.', retryResponse.statusText);
                     }
-    
+
                     passwordModal.hide();
+                } else {
+                    showModal('error', data.error || 'Contraseña incorrecta.');
                 }
-            };
-    
-            submitButton.addEventListener('click', handlePasswordSubmit, { once: true });
-    
-            passwordModal.show();
-        }
+            } catch (error) {
+                console.error('Error al enviar la contraseña:', error);
+                showModal('error', 'Error inesperado al enviar la contraseña.');
+            }
+        };
+
+        submitButton.addEventListener('click', handlePasswordSubmit, { once: true });
+        passwordModal.show();
     }
 
     refreshButton.addEventListener('click', fetchConnections);
-    fetchConnections(); 
+    fetchConnections();
 });

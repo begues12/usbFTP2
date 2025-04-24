@@ -133,7 +133,14 @@ def add_connection():
         else:
             return jsonify({'error': f'Tipo de almacenamiento "{connection_type}" no soportado.'}), 400
 
-        connection = Connection(name=connection_name, type=connection_type, credentials=credentials)
+        connection = Connection()
+        connection.set_new(
+            name        = connection_name,
+            type        = connection_type,
+            credentials = credentials,
+            password    = None
+        )
+    
         connection.save()
 
         return jsonify({'message': 'Conexión añadida con éxito.'}), 200
@@ -200,27 +207,28 @@ def mount_connection(connection_id):
 def submit_password():
     """
     Valida la contraseña enviada por el cliente y genera un token temporal.
+    Si el token ya existe y no ha expirado, lo reutiliza.
     """
-    data            = request.get_json()
-    connection_id   = data.get('connection_id')
-    password        = data.get('password')
+    data = request.get_json()
+    connection_id = data.get('connection_id')
+    password = data.get('password')
 
     connection = get_storage(connection_id)
     if not connection:
         return jsonify({'error': 'Conexión no encontrada.'}), 404
 
+    # Verificar si la contraseña es correcta
     if connection.check_password(password):
         token = connection.generate_token()
-
         return jsonify({
-            'message'   : 'Contraseña correcta.',
-            'token'     : token,
-            'type'      : connection.type,
-            'folder_url': f"/storage/access_folder/{connection_id}"
+            'message': 'Contraseña correcta. Nuevo token generado.',
+            'token': token,
+            'type': connection.type,
+            'folder_url': f"/storage/list/{connection_id}"
         }), 200
     else:
         return jsonify({'error': 'Contraseña incorrecta.'}), 403
-     
+         
 @storage_bp.route('/set_password/<int:connection_id>', methods=['POST'])
 def set_password(connection_id):
     """
@@ -245,7 +253,7 @@ def set_password(connection_id):
     except Exception as e:
         return jsonify({'error': f'Error al configurar la contraseña: {str(e)}'}), 500
   
-@storage_bp.route('/list/<int:connection_id>', methods=['GET'])
+@storage_bp.route('/list/<int:connection_id>', methods=['POST'])
 def list_connection_files(connection_id):
     """
     Lista los archivos y carpetas en la conexión especificada.
@@ -255,10 +263,24 @@ def list_connection_files(connection_id):
 
     try:
         storage = get_storage(connection_id)
+
+        print(f"Validated: {storage.validate_token(token)}, Token: {token}")
         
-        if not storage.validate_token(token) and storage.has_password():
+        if token and storage.validate_token(token):
+            file_list = storage.list_files(folder_path)
+            return render_template(
+                'storage_explorer.html',
+                files=file_list,
+                folder_path=folder_path,
+                connection_id=connection_id,
+                storage_type=storage.name
+            )
+
+        # Si no hay un token válido, verificar si se requiere contraseña
+        if storage.has_password():
             return jsonify({'requires_password': True}), 403
 
+        # Si no se requiere contraseña, listar los archivos
         file_list = storage.list_files(folder_path)
         return render_template(
             'storage_explorer.html',
@@ -276,7 +298,7 @@ def list_connection_files(connection_id):
             connection_id=connection_id,
             name="-"
         )
-        
+                
 @storage_bp.route('/download_file/<int:connection_id>', methods=['GET'])
 def download_file(connection_id):
     """

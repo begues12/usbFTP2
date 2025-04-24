@@ -10,10 +10,12 @@ $(document).ready(function () {
     $(document).on('click', '.set-password', function (event) {
         event.preventDefault();
         currentConnectionId = $(this).data('id'); // Obtener el ID de la conexión
-        newPasswordInput.val(''); // Limpiar el campo de nueva contraseña
+        newPasswordInput.val(''); 
         confirmPasswordInput.val(''); // Limpiar el campo de confirmación
         setPasswordModal.show(); // Mostrar el modal
     });
+
+    console.log('currentConnectionId', currentConnectionId); // Verificar el ID de la conexión actual
 
     // Manejar el guardado de la contraseña
     savePasswordButton.on('click', async function () {

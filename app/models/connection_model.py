@@ -4,6 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash  # Par
 from app.models.token_model import Token  # Importa el modelo de token para validación
 from cryptography.fernet import Fernet
 import os, json, base64  # Importa módulos necesarios para la encriptación y manejo de archivos
+
 class Connection(BaseModel):
     __tablename__ = 'connections'
     
@@ -19,7 +20,6 @@ class Connection(BaseModel):
         raise ValueError("La clave de encriptación (ENCRYPTION_KEY) no es válida. Debe ser una cadena base64 de 32 bytes.")
 
     fernet = Fernet(ENCRYPTION_KEY)
-
     
     def __init__(self, id=None):
         """Inicializa la conexión con un ID opcional."""
@@ -30,22 +30,25 @@ class Connection(BaseModel):
         self.credentials = {}
         self.password_hash = None
     
+    def set_new(self, name, type, credentials, password=None):
+        """Establece una nueva conexión con nombre, tipo y credenciales."""
+        self.name = name
+        self.type = type
+        self.credentials = credentials
+        if password:
+            self.set_password(password)
+    
     def set_credentials(self, credentials):
         """
-        Encripta y guarda las credenciales.
+        Guarda las credenciales directamente como JSON.
         """
-        credentials_json = json.dumps(credentials)  # Convertir a JSON
-        encrypted_credentials = self.fernet.encrypt(credentials_json.encode())  # Encriptar
-        self.credentials = encrypted_credentials
+        self.credentials = credentials  # Almacena el diccionario directamente
 
     def get_credentials(self):
         """
-        Desencripta y devuelve las credenciales.
+        Devuelve las credenciales como un objeto JSON.
         """
-        if not self.credentials:
-            return None
-        decrypted_credentials = self.fernet.decrypt(self.credentials).decode()  # Desencriptar
-        return json.loads(decrypted_credentials)  # Convertir de JSON a diccionario
+        return json.loads(self.credentials) if self.credentials else {}
     
     def set_password(self, password):
         """Encripta y guarda la contraseña."""
@@ -80,8 +83,18 @@ class Connection(BaseModel):
         
     
     def save(self):
-        """Guarda la conexión en la base de datos."""
-        db.session.add(self)
+        """Guarda la conexión en la base de datos. Si ya existe, la actualiza."""
+        if self.id is None:
+            db.session.add(self)
+        else:
+            existing_connection = Connection.query.get(self.id)
+            if existing_connection:
+                existing_connection.name = self.name
+                existing_connection.type = self.type
+                existing_connection.credentials = self.credentials
+                existing_connection.password_hash = self.password_hash
+            else:
+                db.session.add(self)
         db.session.commit()
 
     def delete(self):

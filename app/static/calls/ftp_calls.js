@@ -22,7 +22,7 @@ document.getElementById('ftpForm').addEventListener('submit', async function (e)
         submitButton.disabled = true;
         submitButton.textContent = 'Guardando...';
 
-        const response = await fetch('/storage/add_connection/ftp', {
+        const response = await fetch('/storage/add_connection', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
